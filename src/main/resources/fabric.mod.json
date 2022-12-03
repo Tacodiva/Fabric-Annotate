@@ -1,0 +1,41 @@
+{  
+  "id": "annotate",
+  "name": "Annotate",
+  "version": "${version}",
+  
+  
+  "description": "A standalone library which takes advantage of Java's annotations to speed up mod development.",
+  "authors": [
+    "Tacodude"
+  ],
+
+  "entrypoints": {
+    "main": [
+      "sh.emberj.annotate.core.AnnotateEntrypoint",
+      "sh.emberj.annotate.test.Test"
+    ],
+    "preLaunch": [
+      "sh.emberj.annotate.core.AnnotateEntrypoint"
+    ]
+  },
+
+  "mixins": [
+    "annotate.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.14.9",
+    "minecraft": "~1.19",
+    "java": ">=17"
+  },
+
+  "custom": {
+    "annotate": {
+      "packages": [
+        "sh.emberj.annotate"
+      ]
+    }
+  },
+
+  "schemaVersion": 1
+}

@@ -1,0 +1,17 @@
+This package deals with all the logic behind registries.
+
+At it's heart, a registry is just a collection of entries which all have
+Identifiers. The registry itself also has an identifier. A registry must be
+annotated with {@link sh.emberj.annotate.registry.Registry @Registry} and
+implement {@link sh.emberj.annotate.registry.IRegistry IRegistry}. An entry
+can be added to a registry in three different ways. 
+
+1. Using the @Register annotation takes in the identifier of the registry and
+ will create an instance of whatever type it's on and add it to that registry.
+
+2. Implementing the IRegisterable interface on an annotated type will create
+ an instance of whatever type is implementing it and add it to the registry
+ returned by the getRegistry method.
+
+3. Adding it to the registry directly by using the @Instance annotation on the
+ registry or whatever.
