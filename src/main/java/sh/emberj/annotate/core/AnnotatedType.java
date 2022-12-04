@@ -5,12 +5,15 @@ import java.lang.reflect.Modifier;
 
 import com.google.common.reflect.TypeToken;
 
+import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
+
 public class AnnotatedType {
 
     private final AnnotatedMod _MOD;
     private final TypeToken<?> _TYPE;
 
     private Object _instance;
+    private AnnotatedTypeMeta _meta;
 
     public AnnotatedType(Class<?> typeClass) {
         _TYPE = TypeToken.of(typeClass);
@@ -33,6 +36,11 @@ public class AnnotatedType {
 
     public Object getInstance() {
         return _instance;
+    }
+
+    public AnnotatedTypeMeta getMeta() throws AnnotateException {
+        if (_meta != null) return _meta;
+        return _meta = AnnotatedTypeMeta.readMetadata(_TYPE.getType().getTypeName());
     }
 
     public void setInstance(Object instance) throws AnnotateException {

@@ -1,8 +1,10 @@
 package sh.emberj.annotate.core;
 
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,24 +21,29 @@ import org.slf4j.LoggerFactory;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.impl.util.version.StringVersion;
 
 public class Annotate {
     public static final Logger LOG = LoggerFactory.getLogger(Annotate.class);
     public static final String ID = "annotate";
 
     private static Annotate _instance;
+    private static Version _version;
 
     public static Annotate getInstance() {
-        if (_instance == null) try {
-            new Annotate();
-        } catch (AnnotateException e) {
-            throw e.rethrow();
-        }
+        if (_instance == null)
+            try {
+                new Annotate();
+            } catch (AnnotateException e) {
+                throw e.rethrow();
+            }
         return _instance;
     }
 
     public static LoadStage getLoadStage() {
-        if (_instance == null) return null;
+        if (_instance == null)
+            return null;
         return _instance._loadStage;
     }
 
@@ -47,6 +54,27 @@ public class Annotate {
             inst._loadStage = loadStage;
             inst.executeHandlers(loadStage);
         }
+    }
+
+    public static File getAnnotateDirectory() {
+        Path gameDir = FabricLoader.getInstance().getGameDir();
+        File annotateFolder = new File(gameDir.toFile(), ".annotate");
+        if (!annotateFolder.isDirectory())
+            annotateFolder.mkdir();
+        return annotateFolder;
+    }
+
+    public static Version getVersion() {
+        if (_version != null)
+            return _version;
+        _version = FabricLoader.getInstance().getModContainer(ID).get().getMetadata().getVersion();
+        if (_version == null || _version.getFriendlyString().equals("${version}"))
+            _version = new StringVersion("DEV");
+        return _version;
+    }
+
+    public static String getBranding() {
+        return "Annotate " + getVersion().getFriendlyString();
     }
 
     private final Reflections _REFLECTIONS;
@@ -66,13 +94,14 @@ public class Annotate {
         _MODS = new HashSet<>();
         for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
             AnnotatedMod annotatedMod = AnnotatedMod.tryCreate(mod);
-            if (annotatedMod != null) _MODS.add(annotatedMod);
+            if (annotatedMod != null)
+                _MODS.add(annotatedMod);
         }
         URL[] packageURLs = _MODS.stream()
                 .flatMap(mod -> Arrays.stream(mod.getPackages()).flatMap(p -> ClasspathHelper.forPackage(p).stream()))
                 .toArray(URL[]::new);
 
-        LOG.info("Starting Annotate for " + _MODS.size() + " mod(s).");
+        LOG.info("Starting " + getBranding() + " for " + _MODS.size() + " mod(s).");
 
         // Step 2. Enumerate all the classes in those packages with Reflections
         Reflections.log.info("Starting reflections scan on " + packageURLs.length + " packages.");
@@ -112,7 +141,8 @@ public class Annotate {
 
     AnnotatedMod findModFromPackage(String packageName) {
         for (AnnotatedMod mod : _MODS) {
-            if (mod.containsPackage(packageName)) return mod;
+            if (mod.containsPackage(packageName))
+                return mod;
         }
         throw new RuntimeException("Could not find mod containing the package '" + packageName + "'.");
     }
@@ -132,7 +162,8 @@ public class Annotate {
         } catch (AnnotateException e) {
             throw e.rethrow();
         }
-        if (stage != null) executeHandlers(null);
+        if (stage != null)
+            executeHandlers(null);
     }
 
     private void executeMethodHandler(AnnotatedMethodHandler handler) throws AnnotateException {
@@ -179,7 +210,8 @@ public class Annotate {
 
         private void tryAddTypeHandler(AnnotatedType type) throws AnnotateException {
             AnnotatedTypeHandler handler = tryCastInstance(type, AnnotatedTypeHandler.class);
-            if (handler == null) return;
+            if (handler == null)
+                return;
             LOG.info("Found " + handler.getExecutionStage() + " stage type handler " + handler);
             Set<AnnotatedTypeHandler> handlers = _TYPE_HANDLERS.get(handler.getExecutionStage());
             if (handlers == null) {
@@ -191,7 +223,8 @@ public class Annotate {
 
         private void tryAddMethodHandler(AnnotatedType type) throws AnnotateException {
             AnnotatedMethodHandler handler = tryCastInstance(type, AnnotatedMethodHandler.class);
-            if (handler == null) return;
+            if (handler == null)
+                return;
             LOG.info("Found " + handler.getExecutionStage() + " stage method handler " + handler);
             Set<AnnotatedMethodHandler> handlers = _METHOD_HANDLERS.get(handler.getExecutionStage());
             if (handlers == null) {

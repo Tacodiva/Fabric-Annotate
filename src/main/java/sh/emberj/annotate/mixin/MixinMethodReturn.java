@@ -13,7 +13,7 @@ import sh.emberj.annotate.core.AnnotateAnnotation;
 public @interface MixinMethodReturn {
     public Class<?> type();
 
-    public String method() default "";
+    public Class<?>[] methodArguments() default void.class;
 
     public int ordinal() default -1;
 }

@@ -1,11 +1,9 @@
 package sh.emberj.annotate.core;
 
+import java.io.File;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLEncoder;
-import java.util.Base64;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
@@ -16,14 +14,18 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.MixinEnvironment;
+import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.service.IClassTracker;
+import org.spongepowered.asm.service.MixinService;
+import org.spongepowered.include.com.google.common.io.Files;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import net.fabricmc.loader.impl.launch.FabricLauncherBase;
 import net.minecraft.client.gui.screen.TitleScreen;
+import sh.emberj.annotate.mixin.AnnotateMixins;
 
 public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 
@@ -49,13 +51,14 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 			// which inherits from Object
 			ClassWriter cw = new ClassWriter(0);
 
-			AnnotationVisitor av = cw.visitAnnotation(Type.getDescriptor(Mixin.class), true);
+
+			AnnotationVisitor av = cw.visitAnnotation(Type.getDescriptor(Mixin.class), false);
 			AnnotationVisitor avArr = av.visitArray("value");
-			avArr.visit(null, Type.getType(TitleScreen.class));
+			avArr.visit(null, Type.getType("Lnet/minecraft/client/gui/screen/TitleScreen;"));
 			avArr.visitEnd();
 			av.visitEnd();
 
-			cw.visit(V1_1, ACC_PUBLIC, "RuntimeGeneratedMixin", null, "java/lang/Object", null);
+			cw.visit(V1_1, ACC_PUBLIC | ACC_SUPER, "gen/omg/RuntimeGeneratedMixin", null, "java/lang/Object", null);
 
 			// creates a MethodWriter for the (implicit) constructor
 			MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
@@ -87,9 +90,9 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 			// pushes the 'out' field (of type PrintStream) of the System class
 			mw.visitFieldInsn(GETSTATIC, "sh/emberj/annotate/core/Annotate", "LOG", "Lorg/slf4j/Logger;");
 			// pushes the "Hello World!" String constant
-			mw.visitLdcInsn("OMG WE DID IT HYPE!");
+			mw.visitLdcInsn("OMG WE DID IT HYPE! (!!)");
 			// invokes the 'println' method (defined in the PrintStream class)
-			mw.visitMethodInsn(INVOKEVIRTUAL, "Lorg/slf4j/Logger", "info", "(Ljava/lang/String;)V", false);
+			mw.visitMethodInsn(INVOKEINTERFACE, "org/slf4j/Logger", "info", "(Ljava/lang/String;)V", true);
 			mw.visitInsn(RETURN);
 			// this code uses a maximum of two stack elements and two local
 			// variables
@@ -99,8 +102,15 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 			// gets the bytecode of the Example class, and loads it dynamically
 			byte[] code = cw.toByteArray();
 
-			Helloworld loader = new Helloworld();
-			Class<?> exampleClass = loader.defineClass("RuntimeGeneratedMixin", code, 0, code.length);
+			new File("gen").mkdir();
+
+			File resourcesDir = new File("lmao");
+			File output = new File("lmao/gen/omg/RuntimeGeneratedMixin.class");
+			Files.write(code, output);
+
+			// Helloworld loader = new Helloworld();
+			// Class<?> exampleClass = loader.defineClass("RuntimeGeneratedMixin", code, 0,
+			// code.length);
 
 			// uses the dynamically generated class to print 'Helloworld'
 
@@ -110,8 +120,10 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 
 			// FabricLoader.getInstance().
 
-			final String classB64 = Base64.getEncoder().encodeToString(code);
-			final URL classURL = new URL("data:application;base64," + classB64);
+			// final URL classURL = output.toURI().toURL();
+
+			// final String classB64 = Base64.getEncoder().encodeToString(code);
+			// final URL classURL = new URL("data:application;base64," + classB64);
 
 			// This is actually an instance of KnotClassLoader.DynamicURLClassLoader
 			ClassLoader fabricRootClassLoader = FabricLauncherBase.getLauncher().getTargetClassLoader().getParent();
@@ -120,11 +132,15 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 				Class<?> dynamicURLClassLoader = Class
 						.forName("net.fabricmc.loader.impl.launch.knot.KnotClassLoader$DynamicURLClassLoader");
 				Method method = dynamicURLClassLoader.getDeclaredMethod("addURL", new Class[] { URL.class });
-				method.invoke(fabricRootClassLoader,
-						new Object[] { classURL });
+				method.setAccessible(true);
+				System.out.println(resourcesDir.toURI().toURL());
+				method.invoke(fabricRootClassLoader, new Object[] { resourcesDir.toURI().toURL() });
+				// method.invoke(fabricRootClassLoader, new Object[] { new File("test.json").toURI().toURL() });
 			} catch (Throwable t) {
 				t.printStackTrace();
 			}
+
+			Mixins.addConfiguration("test.json");
 
 			Annotate.LOG.info("Added class to loader!");
 
@@ -144,19 +160,24 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 
 	@Override
 	public void onPreLaunch() {
-		try {
-			ClassReader reader = new ClassReader("sh.emberj.annotate.core.mixin.TestInject");
-			// // StringWriter sw = new StringWriter();
-			TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-			reader.accept(tcv, 0);
-			System.out.println("\n=============\n");
-			Helloworld.main(null);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		// try {
+		// 	ClassReader reader = new ClassReader("sh.emberj.annotate.core.mixin.TestInject");
+		// 	// // StringWriter sw = new StringWriter();
+		// 	TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+		// 	reader.accept(tcv, 0);
+		// 	System.out.println("\n=============\n");
+			// Helloworld.main(null);
+		// } catch (Exception e) {
+		// 	e.printStackTrace();
+		// }
 		_instance = this;
 		Annotate.setLoadStage(LoadStage.PRELAUNCH);
-		System.exit(0);
+		try {
+			AnnotateMixins.runMixins();
+		} catch (AnnotateException e) {
+			throw new RuntimeException(e);
+		}
+		// System.exit(0);
 	}
 
 	public void onPreInitialize() {

@@ -13,5 +13,5 @@ import sh.emberj.annotate.core.AnnotateAnnotation;
 public @interface MixinMethodHead {
     public Class<?> type();
 
-    public String method() default "";
+    public String targetName() default "";
 }

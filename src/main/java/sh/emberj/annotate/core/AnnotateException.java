@@ -31,11 +31,11 @@ public class AnnotateException extends Exception {
     }
 
     public AnnotateException(String cause, AnnotatedMethod method) {
-        this(cause, method.getMethod().getName(), method.getClass(), method.getMod().getModContainer(), null);
+        this(cause, method.getMethod().getName(), method.getMethod().getDeclaringClass(), method.getMod().getModContainer(), null);
     }
 
     public AnnotateException(String cause, AnnotatedMethod method, Throwable e) {
-        this(cause, method.getMethod().getName(), method.getClass(), method.getMod().getModContainer(), e);
+        this(cause, method.getMethod().getName(), method.getMethod().getDeclaringClass(), method.getMod().getModContainer(), e);
     }
 
     public AnnotateException(String cause, AnnotatedMod mod) {
@@ -88,7 +88,7 @@ public class AnnotateException extends Exception {
 
     public void trySet(AnnotatedMethod method) {
         trySetMember(method.getMethod().getName());
-        trySetClass(method.getClass());
+        trySetClass(method.getMethod().getDeclaringClass());
         trySetMod(method.getMod().getModContainer());
     }
 
