@@ -2,11 +2,12 @@ package sh.emberj.annotate.test;
 
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.Instance;
+import sh.emberj.annotate.core.LoadStage;
 import sh.emberj.annotate.registry.Register;
 import sh.emberj.annotate.registry.RegistryManager;
 import sh.emberj.annotate.registry.SimpleRegistry;
 
-@Register(registry = RegistryManager.ID)
+@Register(registry = RegistryManager.ID, loadStage = LoadStage.PREINIT)
 public class AnimalRegistry extends SimpleRegistry<Animal> {
 
     @Instance

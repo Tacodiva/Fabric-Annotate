@@ -21,6 +21,8 @@ dependencies {
 	// modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 	implementation "org.reflections:reflections:${reflections_version}"
+	include "org.reflections:reflections:${reflections_version}"
+	include "org.javassist:javassist:${reflections_javassist_version}"
 }
 
 processResources {
@@ -42,6 +44,16 @@ jar {
 		rename { "${it}_${project.archivesBaseName}"}
 	}
 }
+
+task includeDevelMappings(type: Copy) {
+	from zipTree(configurations.mappings.singleFile).matching {
+		include "mappings/mappings.tiny"
+	}
+	rename { file -> "annotate-map.tiny" }
+	into "build/resources/main/"
+}
+
+jar.dependsOn includeDevelMappings
 
 // configure the maven publication
 publishing {

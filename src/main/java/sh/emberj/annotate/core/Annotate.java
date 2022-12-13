@@ -26,6 +26,7 @@ import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.impl.util.version.StringVersion;
 import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
 import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
+import sh.emberj.annotate.core.mapping.AnoMapper;
 import sh.emberj.annotate.entrypoint.EntrypointManager;
 
 public class Annotate {
@@ -33,6 +34,7 @@ public class Annotate {
     public static final String ID = "annotate";
 
     private static Annotate _instance;
+    private static AnoMapper _mapper;
     private static Version _version;
 
     public static Annotate getInstance() {
@@ -80,6 +82,22 @@ public class Annotate {
 
     public static String getBranding() {
         return "Annotate " + getVersion().getFriendlyString();
+    }
+
+    public static AnoMapper getMapper() {
+        if (_mapper != null)
+            return _mapper;
+        try {
+            long time = System.currentTimeMillis();
+            int beforeSize = AnnotatedTypeMeta.getCacheSize();
+            _mapper = new AnoMapper();
+            LOG.info("Loaded " + (AnnotatedTypeMeta.getCacheSize() - beforeSize) + " classes and their mappings in "
+                    + (System.currentTimeMillis() - time) + " ms");
+            return _mapper;
+        } catch (AnnotateException e) {
+            e.showGUI();
+            throw new AssertionError();
+        }
     }
 
     private final Reflections _REFLECTIONS;
@@ -233,12 +251,7 @@ public class Annotate {
             if (handler == null)
                 return;
             LOG.info("Found " + handler.getExecutionStage() + " stage type handler " + handler);
-            List<AnnotatedTypeHandler> handlers = _TYPE_HANDLERS.get(handler.getExecutionStage());
-            if (handlers == null) {
-                handlers = new ArrayList<>();
-                _TYPE_HANDLERS.put(handler.getExecutionStage(), handlers);
-            }
-            handlers.add(handler);
+            _TYPE_HANDLERS.computeIfAbsent(handler.getExecutionStage(), a -> new ArrayList<>()).add(handler);
         }
 
         private void tryAddMethodHandler(AnnotatedType type) throws AnnotateException {
@@ -246,12 +259,7 @@ public class Annotate {
             if (handler == null)
                 return;
             LOG.info("Found " + handler.getExecutionStage() + " stage method handler " + handler);
-            List<AnnotatedMethodHandler> handlers = _METHOD_HANDLERS.get(handler.getExecutionStage());
-            if (handlers == null) {
-                handlers = new ArrayList<>();
-                _METHOD_HANDLERS.put(handler.getExecutionStage(), handlers);
-            }
-            handlers.add(handler);
+            _METHOD_HANDLERS.computeIfAbsent(handler.getExecutionStage(), a -> new ArrayList<>()).add(handler);
         }
 
         @Override

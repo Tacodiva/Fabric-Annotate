@@ -1,5 +1,8 @@
 package sh.emberj.annotate.mixin.asm;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.injection.At;
@@ -7,12 +10,17 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
 import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
 import sh.emberj.annotate.core.asm.AnnotationMeta;
+import sh.emberj.annotate.core.mapping.AnoMappedClass;
+import sh.emberj.annotate.core.mapping.AnoMappedMethod;
+import sh.emberj.annotate.core.mapping.AnoMapper;
+import sh.emberj.annotate.core.mapping.AnoNamespace;
 
 public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
@@ -59,10 +67,24 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
             throw new AnnotateException(
                     "Mixin target class " + targetType.getClassName() + " has already been loaded!");
 
-        String targetName = mixinAnnotation.getStringParam("targetName");
+        String unmappedTargetName = mixinAnnotation.getStringParam("targetName");
+        if (unmappedTargetName == null || unmappedTargetName.isBlank()) {
+            unmappedTargetName = mixinMethod.getName();
+        }
+        final AnoMapper mapper = Annotate.getMapper();
+        final AnoNamespace namespace = mapper.getNamespace("named");
 
-        if (targetName == null || targetName.isBlank()) {
-            targetName = mixinMethod.getName();
+        final Set<AnnotatedMethodMeta> potentialTargets = new HashSet<>();
+        {
+            final AnoMappedClass targetMapped = mapper.getClass(targetType, namespace);
+            if (targetMapped != null) {
+                for (AnoMappedMethod mappedMethod : targetMapped.getMethods(unmappedTargetName))
+                    potentialTargets.add(mappedMethod.getMethodMeta());
+            } else {
+                final AnnotatedTypeMeta targetTypeMeta = AnnotatedTypeMeta.readMetadata(targetType);
+                for (AnnotatedMethodMeta potentialTarget : targetTypeMeta.getMethodsByName(unmappedTargetName))
+                    potentialTargets.add(potentialTarget);
+            }
         }
 
         final AnnotatedMethodMeta mixinMeta = mixinMethod.getMeta();
@@ -118,13 +140,11 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
             throw new AnnotateException(
                     "Mixin cannot have a non-void return type and a CallbackInfoReturnable parameter.");
 
-        final AnnotatedTypeMeta targetMeta = AnnotatedTypeMeta.readMetadata(targetType);
-        final AnnotatedMethodMeta[] potentialTargets = targetMeta.getMethodsByName(targetName);
         AnnotatedMethodMeta target = null;
 
-        if (potentialTargets.length == 0)
+        if (potentialTargets.size() == 0)
             throw new AnnotateException(
-                    "No methods named '" + targetName + "' in '" + targetType.getClassName() + "'.");
+                    "No methods named '" + unmappedTargetName + "' in '" + targetType.getClassName() + "'.");
 
         final int argIdxStart = _HAS_PARAM_THIS ? 1 : 0;
         final int argIdxEnd = mixinArguments.length
@@ -149,23 +169,23 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
         if (target == null)
             throw new AnnotateException(
-                    "None of the methods named '" + targetName + "' in target had the expected parameters.");
+                    "None of the methods named '" + unmappedTargetName + "' in target had the expected parameters.");
 
         if ((_HAS_RETURN || _HAS_PARAM_RETURN_VAL) && !mixinReturnType.equals(target.getReturnType()))
             throw new AnnotateException(
-                    "Target method '" + targetName + "' had the incorrect return type '"
+                    "Target method '" + unmappedTargetName + "' had the incorrect return type '"
                             + target.getReturnType().getClassName() + "''. (Expected '" + mixinReturnType.getClassName()
                             + "')");
 
         _TARGET_IS_STATIC = target.hasModifier(ACC_STATIC);
 
         if (_HAS_PARAM_THIS && _TARGET_IS_STATIC)
-            throw new AnnotateException("Cannot get this of method '" + targetName
+            throw new AnnotateException("Cannot get this of method '" + unmappedTargetName
                     + "' as it is static.");
 
         Type targetReturnType = target.getReturnType();
         if (targetReturnType.equals(Type.VOID_TYPE) && (_HAS_PARAM_CALLBACK_RETURNABLE || _HAS_RETURN)) {
-            throw new AnnotateException("Mixin target '" + targetName + "' has no return type.");
+            throw new AnnotateException("Mixin target '" + unmappedTargetName + "' has no return type.");
         }
 
         _TARGET_META = target;

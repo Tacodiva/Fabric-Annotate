@@ -16,11 +16,12 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 	public void onPreLaunch() {
 		_instance = this;
 		// try {
-		// 	ClassReader reader = new ClassReader("sh.emberj.annotate.core.mixin.TestInject");
-		// 	TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-		// 	reader.accept(tcv, 0);
+		// ClassReader reader = new
+		// ClassReader("sh.emberj.annotate.core.mixin.TestInject");
+		// TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+		// reader.accept(tcv, 0);
 		// } catch (Exception e) {
-		// 	e.printStackTrace();
+		// e.printStackTrace();
 		// }
 
 		Annotate.setLoadStage(LoadStage.PRELAUNCH);
@@ -45,8 +46,6 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 	}
 
 	public void onPostInitialize() {
-
 		Annotate.setLoadStage(LoadStage.POSTINIT);
-		System.exit(0);
 	}
 }

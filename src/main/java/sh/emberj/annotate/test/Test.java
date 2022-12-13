@@ -2,6 +2,7 @@ package sh.emberj.annotate.test;
 
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateScan;
@@ -58,5 +59,11 @@ public class Test {
         Annotate.LOG.info("State = " + cbi.getId());
         Annotate.LOG.info(""+returnVal);
         return 1111;
+    }
+
+    @MixinMethodHead(type = TitleScreen.class)
+    public static void init() {
+        System.out.println("==== TITLE SCREEN MIXIN ====");
+        System.exit(0);
     }
 }

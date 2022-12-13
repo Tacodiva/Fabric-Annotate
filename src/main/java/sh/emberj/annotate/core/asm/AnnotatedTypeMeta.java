@@ -1,6 +1,7 @@
 package sh.emberj.annotate.core.asm;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import java.util.Map;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 
+import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.Utils;
 
@@ -17,18 +19,38 @@ public class AnnotatedTypeMeta extends AnnotatedMeta {
 
     private static Map<String, AnnotatedTypeMeta> _CAHCE = new HashMap<>();
 
+    public static int getCacheSize() {
+        return _CAHCE.size();
+    }
+
     public static AnnotatedTypeMeta readMetadata(Class<?> clazz) throws AnnotateException {
         return readMetadata(Type.getType(clazz));
     }
 
     public static AnnotatedTypeMeta readMetadata(Type type) throws AnnotateException {
-        AnnotatedTypeMeta meta = _CAHCE.get(type.getClassName());
-        if (meta != null)
-            return meta;
-        meta = new AnnotatedTypeMeta(type);
+        return readMetadata(type, false);
+    }
+
+    public static AnnotatedTypeMeta readMetadata(Type type, boolean allowNotFound) throws AnnotateException {
+        if (_CAHCE.containsKey(type.getClassName()))
+            return _CAHCE.get(type.getClassName());
+        AnnotatedTypeMeta meta;
         try {
-            ClassReader cr = new ClassReader(type.getClassName());
-            cr.accept(new AnnotatedTypeVisitor(meta), 0);
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            InputStream classStream = classLoader.getResourceAsStream(type.getInternalName() + ".class");
+            if (classStream == null) {
+                if (allowNotFound) {
+                    Annotate.LOG.warn("Could not find class '" + type.getInternalName() + "'.");
+                    _CAHCE.put(type.getClassName(), null);                    
+                    return null;
+                }
+                throw new AnnotateException("Class '" + type.getClassName() + "' not found.");
+            }
+            byte[] classFile = classStream.readAllBytes();
+            ClassReader cr = new ClassReader(classFile);
+            AnnotatedTypeVisitor visitor = new AnnotatedTypeVisitor(type);
+            cr.accept(visitor, 0);
+            meta = visitor.getTarget();
         } catch (IOException e) {
             throw new AnnotateException("Error while reading type metadata of '" + type.getClassName() + "'.", e);
         }
@@ -39,11 +61,19 @@ public class AnnotatedTypeMeta extends AnnotatedMeta {
     private final List<AnnotatedMethodMeta> _METHODS;
     private final Type _TYPE;
 
+    private final Type _SUPERTYPE;
+    private final Type[] _INTERFACES;
+
     private Class<?> _class;
 
-    AnnotatedTypeMeta(Type type) {
+    AnnotatedTypeMeta(Type type, String superclass, String[] interfaces) {
         _METHODS = new ArrayList<>();
         _TYPE = type;
+        _SUPERTYPE = Type.getType("L" + superclass + ";");
+        _INTERFACES = new Type[interfaces.length];
+        for (int i = 0; i < interfaces.length; i++) {
+            _INTERFACES[i] = Type.getType("L" + interfaces[i] + ";");
+        }
     }
 
     void addMethod(AnnotatedMethodMeta method) {
@@ -67,6 +97,20 @@ public class AnnotatedTypeMeta extends AnnotatedMeta {
         return _METHODS.stream()
                 .filter(meta -> meta.getName().equals(method.getName()) && meta.getDescriptor().equals(methodDesc))
                 .findFirst().orElse(null);
+    }
+
+    public AnnotatedMethodMeta getMethod(String name, String descriptor) {
+        return _METHODS.stream()
+                .filter(method -> method.getName().equals(name) && method.getDescriptor().equals(descriptor)).findAny()
+                .orElse(null);
+    }
+
+    public Type getSupertype() {
+        return _SUPERTYPE;
+    }
+
+    public Type[] getInterfaces() {
+        return _INTERFACES;
     }
 
     public Iterable<AnnotatedMethodMeta> getMethods() {
