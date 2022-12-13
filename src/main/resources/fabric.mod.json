@@ -1,4 +1,6 @@
 {  
+  "schemaVersion": 1,
+  
   "id": "annotate",
   "name": "Annotate",
   "version": "${version}",
@@ -32,9 +34,8 @@
     "annotate": {
       "packages": [
         "sh.emberj.annotate"
-      ]
+      ],
+      "resourcegen": "../../src/main/resources"
     }
-  },
-
-  "schemaVersion": 1
+  }
 }

@@ -1,5 +1,9 @@
 package sh.emberj.annotate.core;
 
+import java.io.File;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -7,6 +11,8 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.spongepowered.asm.service.MixinService;
+
+import net.fabricmc.loader.impl.launch.FabricLauncherBase;
 
 public class Utils implements Opcodes {
 
@@ -87,6 +93,33 @@ public class Utils implements Opcodes {
             return Class.forName(type.getClassName());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static void injectClasspathFile(File file) throws AnnotateException {
+        try {
+            injectClasspathURL(file.toURI().toURL());
+        } catch (MalformedURLException e) {
+            throw new AnnotateException("Error converting file to URL.", e);
+        }
+    }
+
+    private static Method _addUrlMethod;
+
+    public static void injectClasspathURL(URL url) throws AnnotateException {
+        try {
+            // This is actually an instance of KnotClassLoader.DynamicURLClassLoader
+            if (_addUrlMethod == null) {
+                Class<?> dynamicURLClassLoader = Class
+                        .forName("net.fabricmc.loader.impl.launch.knot.KnotClassLoader$DynamicURLClassLoader");
+                _addUrlMethod = dynamicURLClassLoader.getDeclaredMethod("addURL", new Class[] { URL.class });
+                _addUrlMethod.setAccessible(true);
+            }
+            _addUrlMethod.invoke(FabricLauncherBase.getLauncher().getTargetClassLoader().getParent(),
+                    new Object[] { url });
+            Annotate.LOG.info("Injected URL '" + url + "' into classpath");
+        } catch (Exception e) {
+            throw new AnnotateException("Error while injecting URL into classpath.", e);
         }
     }
 }

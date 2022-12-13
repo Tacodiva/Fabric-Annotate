@@ -2,23 +2,27 @@ package sh.emberj.annotate.mixin;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.MixinEnvironment;
+import org.spongepowered.asm.mixin.MixinEnvironment.Option;
 import org.spongepowered.asm.mixin.Mixins;
+import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.include.com.google.common.io.Files;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import net.fabricmc.loader.impl.launch.FabricLauncherBase;
+import net.fabricmc.loader.impl.launch.knot.Knot;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
+import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.mixin.asm.DynamicMixinClass;
 
 public class AnnotateMixins {
@@ -86,44 +90,57 @@ public class AnnotateMixins {
                 byte[] bytecode = clazz.generateBytecode();
                 String className = getSimpleClassName(clazz.getClassName());
                 Files.write(bytecode, new File(codePackage, className + ".class"));
-                
-                // ClassReader reader = new ClassReader(bytecode);
-                // TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-                // reader.accept(tcv, 0);
-    
                 Annotate.LOG.info("Codegen: Wrote " + className);
             }
         } catch (IOException e) {
             throw new AnnotateException("Error while writing generated files to disk.", e);
         }
 
-        try {
-            // This is actually an instance of KnotClassLoader.DynamicURLClassLoader
-            ClassLoader fabricRootClassLoader = FabricLauncherBase.getLauncher().getTargetClassLoader().getParent();
-            Class<?> dynamicURLClassLoader = Class
-                    .forName("net.fabricmc.loader.impl.launch.knot.KnotClassLoader$DynamicURLClassLoader");
-            Method method = dynamicURLClassLoader.getDeclaredMethod("addURL", new Class[] { URL.class });
-            method.setAccessible(true);
-            method.invoke(fabricRootClassLoader, new Object[] { codegen.toURI().toURL() });
-            Annotate.LOG.info("Codegen: Injected URL into classpath");
-        } catch (Exception e) {
-            throw new AnnotateException("Error while injecting URL into classpath.", e);
-        }
-
-        Mixins.addConfiguration(MIXINS_JSON_NAME);
-
-        try {
-            Method m = MixinEnvironment.class.getDeclaredMethod("gotoPhase", MixinEnvironment.Phase.class);
-            m.setAccessible(true);
-            m.invoke(null, MixinEnvironment.Phase.INIT);
-            m.invoke(null, MixinEnvironment.Phase.DEFAULT);
-        } catch (Exception e) {
-            throw new AnnotateException("Error while performing mixins.", e);
-        }
+        Utils.injectClasspathFile(codegen);
 
         Annotate.LOG.info("Codegen: Finished writing " + _classes.size() + " classes in "
                 + (System.currentTimeMillis() - startTime) + " ms");
         _classes = null;
+
+        // Force the mixin processor to load our new configuration.
+        // This is probably the most horrible thing I have ever done.
+        try {
+            // Add the mixins to the current enviroment
+            Mixins.addConfiguration(MIXINS_JSON_NAME);
+            // Enable logging so we can see the mixins being applied
+            MixinEnvironment.getCurrentEnvironment().setOption(Option.DEBUG_VERBOSE, true);
+
+            // Get Knot.classLoader
+            // https://github.com/FabricMC/fabric-loader/blob/354af34127e52378410d182dd7b458e8c9b893d5/src/main/java/net/fabricmc/loader/impl/launch/knot/Knot.java#L56
+            Field knotClassLoader = Knot.class.getDeclaredField("classLoader");
+            knotClassLoader.setAccessible(true);
+            Object kcd = knotClassLoader.get(FabricLauncherBase.getLauncher());
+            Class<?> kcdClass = kcd.getClass(); // KnotClassDelegate
+
+            // Get KnotClassDelegate.mixinTransformer
+            // https://github.com/FabricMC/fabric-loader/blob/354af34127e52378410d182dd7b458e8c9b893d5/src/main/java/net/fabricmc/loader/impl/launch/knot/KnotClassDelegate.java#L83
+            Field kcdMixinTransformer = kcdClass.getDeclaredField("mixinTransformer");
+            kcdMixinTransformer.setAccessible(true);
+            IMixinTransformer transformer = (IMixinTransformer) kcdMixinTransformer.get(kcd);
+            Class<?> transformerClass = transformer.getClass(); // MixinTransformer
+
+            // Get MixinTransformer.processor
+            // https://github.com/SpongePowered/Mixin/blob/155314e6e91465dad727e621a569906a410cd6f4/src/main/java/org/spongepowered/asm/mixin/transformer/MixinTransformer.java#L89
+            Field transformerProcessor = transformerClass.getDeclaredField("processor");
+            transformerProcessor.setAccessible(true);
+            Object processor = transformerProcessor.get(transformer);
+            Class<?> processorClass = processor.getClass(); // MixinProcessor
+
+            // Get and invoke MixinProcessor.select
+            // https://github.com/SpongePowered/Mixin/blob/155314e6e91465dad727e621a569906a410cd6f4/src/main/java/org/spongepowered/asm/mixin/transformer/MixinProcessor.java#L448
+            Method processorSelect = processorClass.getDeclaredMethod("select", MixinEnvironment.class);
+            processorSelect.setAccessible(true);
+            processorSelect.invoke(processor, MixinEnvironment.getCurrentEnvironment());
+            
+            MixinEnvironment.getCurrentEnvironment().setOption(Option.DEBUG_VERBOSE, false);
+        } catch (Exception e) {
+            throw new AnnotateException("Encountered exception while force loading mixins.", e);
+        }
     }
 
     private static int classUniquifier = 0;
