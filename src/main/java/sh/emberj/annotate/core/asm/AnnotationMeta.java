@@ -5,14 +5,18 @@ import java.util.Map;
 
 import org.objectweb.asm.Type;
 
+import sh.emberj.annotate.core.AnnotateException;
+
 public class AnnotationMeta {
 
     private Type _TYPE;
     private Map<String, Object> _PARAMETERS;
+    private Map<String, EnumValueMeta> _ENUM_PARAMS;
 
     public AnnotationMeta(Type type) {
         _TYPE = type;
         _PARAMETERS = new HashMap<>();
+        _ENUM_PARAMS = new HashMap<>();
     }
 
     public Type getType() {
@@ -21,6 +25,10 @@ public class AnnotationMeta {
 
     void addParam(String name, Object value) {
         _PARAMETERS.put(name, value);
+    }
+
+    void addEnumParam(String name, EnumValueMeta value) {
+        _ENUM_PARAMS.put(name, value);
     }
 
     public Object getParam(String name) {
@@ -35,8 +43,15 @@ public class AnnotationMeta {
         return (String) _PARAMETERS.get(name);
     }
 
-    // public Type getTypeParam(String name) {
-    //     Object obj = _PARAMETERS.get(name);
-    //     // return obj;
-    // }
+    public String getEnumParamValue(String name) {
+        EnumValueMeta value = _ENUM_PARAMS.get(name);
+        if (value == null) return null;
+        return value.getValue();
+    }
+
+    public <T extends Enum<T>> T getEnumParam(String name, Class<T> enumClass) throws AnnotateException {   
+        EnumValueMeta value = _ENUM_PARAMS.get(name);
+        if (value == null) return null;
+        return value.getValue(enumClass);
+    }
 }

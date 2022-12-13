@@ -175,7 +175,7 @@ public class AnnotateException extends Exception {
             error.append("\n");
             error.append("\n");
             error.append("Load Stage: ");
-            error.append(Annotate.getLoadStage().toString());
+            error.append(""+Annotate.getLoadStage());
             if (_problemMod != null)
                 error.append("\nCulprit Mod: " + _problemMod.getMetadata().getName() + " ("
                         + _problemMod.getMetadata().getId() + ")");

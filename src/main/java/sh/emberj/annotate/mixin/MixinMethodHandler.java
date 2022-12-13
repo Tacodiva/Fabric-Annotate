@@ -16,7 +16,7 @@ import sh.emberj.annotate.mixin.asm.InjectMethodGenerator.InjectPosition;
 public class MixinMethodHandler extends AnnotatedMethodHandler {
 
     public MixinMethodHandler() {
-        super(LoadStage.PRELAUNCH);
+        super(LoadStage.PRELAUNCH, -1000);
     }
 
     @Override
@@ -36,4 +36,12 @@ public class MixinMethodHandler extends AnnotatedMethodHandler {
         }
     }
 
+    @Override
+    public void postHandle() {
+        try {
+			AnnotateMixins.runMixins();
+		} catch (AnnotateException e) {
+			throw new RuntimeException(e);
+		}
+    }
 }

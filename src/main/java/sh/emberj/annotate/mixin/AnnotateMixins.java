@@ -2,16 +2,13 @@ package sh.emberj.annotate.mixin;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.util.TraceClassVisitor;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.include.com.google.common.io.Files;
@@ -90,9 +87,9 @@ public class AnnotateMixins {
                 String className = getSimpleClassName(clazz.getClassName());
                 Files.write(bytecode, new File(codePackage, className + ".class"));
                 
-                ClassReader reader = new ClassReader(bytecode);
-                TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
-                reader.accept(tcv, 0);
+                // ClassReader reader = new ClassReader(bytecode);
+                // TraceClassVisitor tcv = new TraceClassVisitor(new PrintWriter(System.out));
+                // reader.accept(tcv, 0);
     
                 Annotate.LOG.info("Codegen: Wrote " + className);
             }

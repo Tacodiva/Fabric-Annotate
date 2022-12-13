@@ -15,4 +15,9 @@ class AnnotateAnnotationVisitor extends AnnotationVisitor implements Opcodes {
     public void visit(String name, Object value) {
         _TARGET.addParam(name, value);
     }
+
+    @Override
+    public void visitEnum(final String name, final String descriptor, final String value) {
+        _TARGET.addEnumParam(name, new EnumValueMeta(descriptor, value));
+    }
 }

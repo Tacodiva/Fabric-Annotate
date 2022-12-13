@@ -4,9 +4,11 @@ import java.io.File;
 import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,6 +26,7 @@ import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.impl.util.version.StringVersion;
 import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
 import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
+import sh.emberj.annotate.entrypoint.EntrypointManager;
 
 public class Annotate {
     public static final Logger LOG = LoggerFactory.getLogger(Annotate.class);
@@ -54,6 +57,7 @@ public class Annotate {
             LOG.info("Load stage " + loadStage);
             inst._loadStage = loadStage;
             inst.executeHandlers(loadStage);
+            EntrypointManager.invokeEntrypoints(loadStage);
         }
     }
 
@@ -83,8 +87,8 @@ public class Annotate {
     private final Set<AnnotatedType> _TYPES;
     private final Set<AnnotatedMethod> _METHODS;
 
-    private final Map<LoadStage, Set<AnnotatedTypeHandler>> _TYPE_HANDLERS;
-    private final Map<LoadStage, Set<AnnotatedMethodHandler>> _METHOD_HANDLERS;
+    private final Map<LoadStage, List<AnnotatedTypeHandler>> _TYPE_HANDLERS;
+    private final Map<LoadStage, List<AnnotatedMethodHandler>> _METHOD_HANDLERS;
 
     private LoadStage _loadStage;
 
@@ -121,7 +125,7 @@ public class Annotate {
             // This is safe because ScannableAnnotation can only be put on annotations
             @SuppressWarnings("unchecked")
             Class<? extends Annotation> annotation = (Class<? extends Annotation>) annotationClass;
-            
+
             classesToScan.addAll(_REFLECTIONS.getTypesAnnotatedWith(annotation, false));
         }
         _TYPES = classesToScan.stream().map(AnnotatedType::new).collect(Collectors.toSet());
@@ -130,9 +134,10 @@ public class Annotate {
         Set<AnnotatedMethodMeta> methodsToScan = new HashSet<>();
         for (AnnotatedType type : _TYPES) {
             AnnotatedTypeMeta typeMeta = type.getMeta();
-            
+
             for (AnnotatedMethodMeta method : typeMeta.getMethods()) {
-                if (!method.hasAnnotations()) continue;
+                if (!method.hasAnnotations())
+                    continue;
                 for (Class<?> annotationClass : annotations) {
                     if (method.hasAnnotation(annotationClass)) {
                         methodsToScan.add(method);
@@ -163,12 +168,12 @@ public class Annotate {
 
     private void executeHandlers(LoadStage stage) {
         try {
-            Set<AnnotatedTypeHandler> typeHandlers = _TYPE_HANDLERS.get(stage);
+            List<AnnotatedTypeHandler> typeHandlers = _TYPE_HANDLERS.get(stage);
             if (typeHandlers != null) {
                 for (AnnotatedTypeHandler handler : typeHandlers)
                     executeTypeHandler(handler);
             }
-            Set<AnnotatedMethodHandler> methodHandlers = _METHOD_HANDLERS.get(stage);
+            List<AnnotatedMethodHandler> methodHandlers = _METHOD_HANDLERS.get(stage);
             if (methodHandlers != null) {
                 for (AnnotatedMethodHandler handler : methodHandlers)
                     executeMethodHandler(handler);
@@ -182,6 +187,7 @@ public class Annotate {
 
     private void executeMethodHandler(AnnotatedMethodHandler handler) throws AnnotateException {
         LOG.debug("Running method handler " + handler);
+        handler.preHandle();
         for (AnnotatedMethod method : _METHODS) {
             try {
                 handler.handle(method);
@@ -192,7 +198,7 @@ public class Annotate {
                 throw new AnnotateException("Unexpected error while handling method.", method, e);
             }
         }
-
+        handler.postHandle();
     }
 
     private void executeTypeHandler(AnnotatedTypeHandler handler) throws AnnotateException {
@@ -227,9 +233,9 @@ public class Annotate {
             if (handler == null)
                 return;
             LOG.info("Found " + handler.getExecutionStage() + " stage type handler " + handler);
-            Set<AnnotatedTypeHandler> handlers = _TYPE_HANDLERS.get(handler.getExecutionStage());
+            List<AnnotatedTypeHandler> handlers = _TYPE_HANDLERS.get(handler.getExecutionStage());
             if (handlers == null) {
-                handlers = new HashSet<>();
+                handlers = new ArrayList<>();
                 _TYPE_HANDLERS.put(handler.getExecutionStage(), handlers);
             }
             handlers.add(handler);
@@ -240,12 +246,20 @@ public class Annotate {
             if (handler == null)
                 return;
             LOG.info("Found " + handler.getExecutionStage() + " stage method handler " + handler);
-            Set<AnnotatedMethodHandler> handlers = _METHOD_HANDLERS.get(handler.getExecutionStage());
+            List<AnnotatedMethodHandler> handlers = _METHOD_HANDLERS.get(handler.getExecutionStage());
             if (handlers == null) {
-                handlers = new HashSet<>();
+                handlers = new ArrayList<>();
                 _METHOD_HANDLERS.put(handler.getExecutionStage(), handlers);
             }
             handlers.add(handler);
+        }
+
+        @Override
+        public void postHandle() {
+            for (List<AnnotatedTypeHandler> typeHandlers : _TYPE_HANDLERS.values())
+                typeHandlers.sort((a, b) -> Integer.compare(a.getExecutionPriority(), b.getExecutionPriority()));
+            for (List<AnnotatedMethodHandler> methodHandlers : _METHOD_HANDLERS.values())
+                methodHandlers.sort((a, b) -> Integer.compare(a.getExecutionPriority(), b.getExecutionPriority()));
         }
     }
 }

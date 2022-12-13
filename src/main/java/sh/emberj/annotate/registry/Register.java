@@ -20,5 +20,5 @@ public @interface Register {
 
     public String namespace() default "";
 
-    public LoadStage loadStage() default LoadStage.INIT;
+    public LoadStage loadStage() default LoadStage.PREINIT;
 }

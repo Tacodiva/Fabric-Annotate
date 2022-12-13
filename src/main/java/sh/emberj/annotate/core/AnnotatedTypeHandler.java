@@ -8,13 +8,27 @@ import com.google.common.reflect.TypeToken;
 public abstract class AnnotatedTypeHandler {
 
     private final LoadStage _EXECUTION_STAGE;
+    private final int _PRIORITY;
+
+    protected AnnotatedTypeHandler(LoadStage executionStage, int priority) {
+        _EXECUTION_STAGE = executionStage;
+        _PRIORITY = priority;
+    }
 
     protected AnnotatedTypeHandler(LoadStage executionStage) {
-        _EXECUTION_STAGE = executionStage;
+        this(executionStage, 0);
+    }
+
+    protected AnnotatedTypeHandler() {
+        this(LoadStage.INIT, 0);
     }
 
     public LoadStage getExecutionStage() {
         return _EXECUTION_STAGE;
+    }
+
+    public int getExecutionPriority() {
+        return _PRIORITY;
     }
 
     public void preHandle() throws AnnotateException { }
@@ -64,7 +78,7 @@ public abstract class AnnotatedTypeHandler {
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException
                 | SecurityException e) {
             throw new AnnotateException(
-                    "Exception while creating instance, make sure the type has a constructor which takes no arguments. "
+                    "Exception while creating instance, make sure the type has a public constructor which takes no arguments. "
                             + e.getMessage(),
                     type);
         }

@@ -2,21 +2,42 @@ package sh.emberj.annotate.test;
 
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.fabricmc.api.ModInitializer;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateScan;
+import sh.emberj.annotate.core.LoadStage;
+import sh.emberj.annotate.entrypoint.Entrypoint;
 import sh.emberj.annotate.mixin.MixinMethodHead;
 import sh.emberj.annotate.mixin.MixinMethodTail;
 
 @AnnotateScan
-public class Test implements ModInitializer {
+public class Test {
 
-    @Override
-    public void onInitialize() {
+    @Entrypoint
+    public static void onInitialize() {
         AnimalRegistry.INSTANCE.get(new Identifier("annotate:pig")).makeNoise();
         AnimalRegistry.INSTANCE.get(new Identifier("annotate:sheep")).makeNoise();
         AnimalRegistry.INSTANCE.get(new Identifier("annotate:piglet")).makeNoise();
+    }
+
+    @Entrypoint(stage = LoadStage.PRELAUNCH)
+    public static void onInit0() {
+        Annotate.LOG.info("On init 0!");
+    }
+
+    @Entrypoint(stage = LoadStage.PREINIT)
+    public static void onInit1() {
+        Annotate.LOG.info("On init 1!");
+    }
+
+    @Entrypoint(priority = -1)
+    public static void onInit2() {
+        Annotate.LOG.info("On init 2!");
+    }
+
+    @Entrypoint(stage = LoadStage.POSTINIT)
+    public static void onInit3() {
+        Annotate.LOG.info("On init 3!");
     }
 
     @MixinMethodHead(type = MixinTarget.class)
