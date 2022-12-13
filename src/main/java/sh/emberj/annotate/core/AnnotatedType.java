@@ -3,6 +3,8 @@ package sh.emberj.annotate.core;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
+import org.objectweb.asm.Type;
+
 import com.google.common.reflect.TypeToken;
 
 import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
@@ -18,7 +20,7 @@ public class AnnotatedType {
     public AnnotatedType(Class<?> typeClass) {
         _TYPE = TypeToken.of(typeClass);
 
-        _MOD = Annotate.getInstance().findModFromPackage(getRawType().getPackageName());
+        _MOD = Annotate.getInstance().findModFromPackage(getAsClass().getPackageName());
         _MOD.addType(this);
     }
 
@@ -30,7 +32,7 @@ public class AnnotatedType {
         return _TYPE;
     }
 
-    public Class<?> getRawType() {
+    public Class<?> getAsClass() {
         return _TYPE.getRawType();
     }
 
@@ -40,15 +42,15 @@ public class AnnotatedType {
 
     public AnnotatedTypeMeta getMeta() throws AnnotateException {
         if (_meta != null) return _meta;
-        return _meta = AnnotatedTypeMeta.readMetadata(_TYPE.getType().getTypeName());
+        return _meta = AnnotatedTypeMeta.readMetadata(Type.getType(getAsClass()));
     }
 
     public void setInstance(Object instance) throws AnnotateException {
         if (_instance != null) throw new AnnotateException("Cannot set instance twice!");
-        if (getRawType() != instance.getClass())
+        if (getAsClass() != instance.getClass())
             throw new AnnotateException("'" + instance.getClass() + "'' not the same type as '" + _TYPE + "'.");
         this._instance = instance;
-        for (Field field : getRawType().getDeclaredFields()) {
+        for (Field field : getAsClass().getDeclaredFields()) {
             if (field.getAnnotation(Instance.class) != null) {
                 if (!Modifier.isStatic(field.getModifiers()))
                     throw new AnnotateException("Fields annotated with @Instance must be static.", field.getName(),

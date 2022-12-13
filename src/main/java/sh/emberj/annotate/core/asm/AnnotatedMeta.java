@@ -17,6 +17,18 @@ public abstract class AnnotatedMeta {
         _ANNOTATIONS.add(meta);
     }
 
+    public boolean hasAnnotations() {
+        return !_ANNOTATIONS.isEmpty();
+    }
+
+    public boolean hasAnnotation(Class<?> clazz) {
+        return hasAnnotation(Type.getType(clazz));
+    }
+
+    public boolean hasAnnotation(Type type) {        
+        return getAnnotationByType(type) != null;
+    }
+
     public AnnotationMeta[] getAnnotationsByType(Class<?> clazz) {
         return getAnnotationsByType(Type.getType(clazz));
     }

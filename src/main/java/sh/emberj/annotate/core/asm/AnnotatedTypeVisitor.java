@@ -27,7 +27,7 @@ class AnnotatedTypeVisitor extends ClassVisitor implements Opcodes {
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc,
             String signature, String[] exceptions) {
-        AnnotatedMethodMeta method = new AnnotatedMethodMeta(name, desc, access, exceptions);
+        AnnotatedMethodMeta method = new AnnotatedMethodMeta(_TARGET, name, desc, access, exceptions);
         _TARGET.addMethod(method);
         return new AnnotatedMethodVisitor(method);
     }

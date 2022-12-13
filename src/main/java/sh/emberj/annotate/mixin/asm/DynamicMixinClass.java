@@ -34,11 +34,11 @@ public class DynamicMixinClass implements Opcodes {
     }
 
     public byte[] generateBytecode() {
-        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
         {
-            DynamicMixinAnnotation mixinAnnotation = new DynamicMixinAnnotation(Mixin.class);
-            mixinAnnotation.setArrayParam("target", _TARGET);
+            DynamicMixinAnnotation mixinAnnotation = new DynamicMixinAnnotation(Mixin.class, false);
+            mixinAnnotation.setArrayParam("value", _TARGET);
             mixinAnnotation.writeParams(cw.visitAnnotation(mixinAnnotation.getDescriptor(), mixinAnnotation.isVisible())).visitEnd();
         }
 
@@ -59,7 +59,7 @@ public class DynamicMixinClass implements Opcodes {
 
         for (int i = 0; i < _METHODS.size(); i++) {
             final IDynamicMixinMethodGenerator method = _METHODS.get(i);
-            MethodVisitor mw = cw.visitMethod(ACC_PUBLIC, method.getNamePrefix() + i, method.generateDescriptor(), null,
+            MethodVisitor mw = cw.visitMethod(method.generateMethodFlags(), method.getNamePrefix() + i, method.generateDescriptor(), null,
                     null);
             DynamicMixinAnnotation methodAnnotation = method.generateAnnotation();
             methodAnnotation.writeParams(mw.visitAnnotation(methodAnnotation.getDescriptor(), methodAnnotation.isVisible())).visitEnd();

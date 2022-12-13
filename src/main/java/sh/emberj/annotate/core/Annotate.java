@@ -2,7 +2,6 @@ package sh.emberj.annotate.core;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -23,6 +22,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.impl.util.version.StringVersion;
+import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
+import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
 
 public class Annotate {
     public static final Logger LOG = LoggerFactory.getLogger(Annotate.class);
@@ -36,7 +37,7 @@ public class Annotate {
             try {
                 new Annotate();
             } catch (AnnotateException e) {
-                throw e.rethrow();
+                e.showGUI();
             }
         return _instance;
     }
@@ -113,20 +114,33 @@ public class Annotate {
         // @AnnotateAnnotation
         Set<Class<?>> annotations = _REFLECTIONS.getTypesAnnotatedWith(AnnotateAnnotation.class, true);
 
-        // Step 4. Find all the classes and functions annotated with one of the
-        // annotations found in the above step.
+        // Step 4. Find all the classes annotated with one of the annotations found in
+        // the above step.
         Set<Class<?>> classesToScan = new HashSet<>();
-        Set<Method> methodsToScan = new HashSet<>();
         for (Class<?> annotationClass : annotations) {
             // This is safe because ScannableAnnotation can only be put on annotations
             @SuppressWarnings("unchecked")
             Class<? extends Annotation> annotation = (Class<? extends Annotation>) annotationClass;
-
+            
             classesToScan.addAll(_REFLECTIONS.getTypesAnnotatedWith(annotation, false));
-            methodsToScan.addAll(_REFLECTIONS.getMethodsAnnotatedWith(annotation));
         }
-        // Convert them into instances of AnnotatedType
         _TYPES = classesToScan.stream().map(AnnotatedType::new).collect(Collectors.toSet());
+
+        // Step 4.5. Find all the methods to scan
+        Set<AnnotatedMethodMeta> methodsToScan = new HashSet<>();
+        for (AnnotatedType type : _TYPES) {
+            AnnotatedTypeMeta typeMeta = type.getMeta();
+            
+            for (AnnotatedMethodMeta method : typeMeta.getMethods()) {
+                if (!method.hasAnnotations()) continue;
+                for (Class<?> annotationClass : annotations) {
+                    if (method.hasAnnotation(annotationClass)) {
+                        methodsToScan.add(method);
+                        break;
+                    }
+                }
+            }
+        }
         _METHODS = methodsToScan.stream().map(AnnotatedMethod::new).collect(Collectors.toSet());
 
         LOG.info("Found " + _TYPES.size() + " annotated types and " + methodsToScan.size() + " methods using "
@@ -160,7 +174,7 @@ public class Annotate {
                     executeMethodHandler(handler);
             }
         } catch (AnnotateException e) {
-            throw e.rethrow();
+            e.showGUI();
         }
         if (stage != null)
             executeHandlers(null);

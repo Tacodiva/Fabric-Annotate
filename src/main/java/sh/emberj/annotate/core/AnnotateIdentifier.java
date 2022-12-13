@@ -79,7 +79,7 @@ public class AnnotateIdentifier {
         }
 
         if (isBlank(path)) {
-            path = camelCaseToSnakeCase(type.getRawType().getSimpleName());
+            path = camelCaseToSnakeCase(type.getAsClass().getSimpleName());
         }
 
         try {

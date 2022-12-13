@@ -27,12 +27,12 @@ public abstract class AnnotatedTypeHandler {
 
     protected static <T extends Annotation> T tryGetAnnotation(AnnotatedType type, Class<T> rawAnnotation)
             throws AnnotateException {
-        return type.getRawType().getAnnotation(rawAnnotation);
+        return type.getAsClass().getAnnotation(rawAnnotation);
     }
 
     protected static <T extends Annotation> T[] tryGetAnnotations(AnnotatedType type, Class<T> rawAnnotation)
             throws AnnotateException {
-        return type.getRawType().getAnnotationsByType(rawAnnotation);
+        return type.getAsClass().getAnnotationsByType(rawAnnotation);
     }
 
     @SuppressWarnings("unchecked")
@@ -42,7 +42,7 @@ public abstract class AnnotatedTypeHandler {
 
     @SuppressWarnings("unchecked") // This is actually checked with 'clazz.isAssignableFrom'
     protected static <T> T tryCastInstance(AnnotatedType type, Class<T> expected) throws AnnotateException {
-        if (!expected.isAssignableFrom(type.getRawType())) return null;
+        if (!expected.isAssignableFrom(type.getAsClass())) return null;
         Object instance = type.getInstance();
         if (instance != null) return (T) instance;
         return (T) createInstance(type);
@@ -56,7 +56,7 @@ public abstract class AnnotatedTypeHandler {
 
     protected static Object createInstance(AnnotatedType type) throws AnnotateException {
         try {
-            Object inst = type.getRawType().getConstructor().newInstance();
+            Object inst = type.getAsClass().getConstructor().newInstance();
             type.setInstance(inst);
             return inst;
         } catch (InvocationTargetException e) {

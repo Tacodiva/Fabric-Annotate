@@ -15,17 +15,17 @@ public class DynamicMixinAnnotation {
     private Map<String, DynamicMixinAnnotation> _ANNOTATION_PARAMS;
     private Map<String, DynamicMixinAnnotation[]> _ANNOTATION_ARR_PARAMS;
 
-    public DynamicMixinAnnotation(Class<?> annotationType) {
-        this(Type.getType(annotationType));
+    public DynamicMixinAnnotation(Class<?> annotationType, boolean visible) {
+        this(Type.getType(annotationType), visible);
     }
 
-    public DynamicMixinAnnotation(Type annotationType) {
+    public DynamicMixinAnnotation(Type annotationType, boolean visible) {
         _TYPE = annotationType;
         _NORMAL_PARAMS = new HashMap<>();
         _ARR_PARAMS = new HashMap<>();
         _ANNOTATION_PARAMS = new HashMap<>();
         _ANNOTATION_ARR_PARAMS = new HashMap<>();
-        _VISIBLE = false;
+        _VISIBLE = visible;
     }
 
     public DynamicMixinAnnotation setParam(String name, Object value) {
@@ -74,7 +74,7 @@ public class DynamicMixinAnnotation {
         for (Entry<String, DynamicMixinAnnotation[]> param : _ANNOTATION_ARR_PARAMS.entrySet()) {
             AnnotationVisitor array = v.visitArray(param.getKey());
             for (DynamicMixinAnnotation annotation : param.getValue()) {
-                AnnotationVisitor subV = v.visitAnnotation(param.getKey(), annotation.getDescriptor());
+                AnnotationVisitor subV = array.visitAnnotation(null, annotation.getDescriptor());
                 annotation.writeParams(subV);
                 subV.visitEnd();
             }
