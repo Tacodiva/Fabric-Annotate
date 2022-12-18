@@ -27,7 +27,7 @@ public class AnnotateException extends Exception {
         this(cause, null, null, null, null);
     }
 
-    public AnnotateException(String cause, Exception e) {
+    public AnnotateException(String cause, Throwable e) {
         this(cause, null, null, null, e);
     }
 

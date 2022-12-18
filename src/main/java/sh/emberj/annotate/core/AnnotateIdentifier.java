@@ -5,7 +5,8 @@ import net.minecraft.util.InvalidIdentifierException;
 
 public class AnnotateIdentifier {
 
-    private AnnotateIdentifier() {}
+    private AnnotateIdentifier() {
+    }
 
     /**
      * @param str The string
@@ -23,7 +24,8 @@ public class AnnotateIdentifier {
      * @return The snake case string
      */
     private static String camelCaseToSnakeCase(String text) {
-        if (text.length() == 0) return "";
+        if (text.length() == 0)
+            return "";
 
         StringBuilder sb = new StringBuilder();
         int lastPart = 0;
@@ -55,9 +57,11 @@ public class AnnotateIdentifier {
      * @throws AnnotateException If the identifier is invalid
      */
     public static Identifier createIdentifier(String id, AnnotatedType type) throws AnnotateException {
-        if (isBlank(id)) return createIdentifier(null, null, type);
+        if (isBlank(id))
+            return createIdentifier(null, null, type);
         int idx = id.indexOf(Identifier.NAMESPACE_SEPARATOR);
-        if (idx == -1) return createIdentifier(null, id, type);
+        if (idx == -1)
+            return createIdentifier(null, id, type);
         return createIdentifier(id.substring(0, idx), id.substring(idx + 1, id.length()), type);
     }
 
@@ -74,9 +78,7 @@ public class AnnotateIdentifier {
      */
     public static Identifier createIdentifier(String namespace, String path, AnnotatedType type)
             throws AnnotateException {
-        if (isBlank(namespace)) {
-            namespace = type.getMod().getId();
-        }
+        namespace = resolveNamespace(namespace, type);
 
         if (isBlank(path)) {
             path = camelCaseToSnakeCase(type.getAsClass().getSimpleName());
@@ -89,4 +91,9 @@ public class AnnotateIdentifier {
         }
     }
 
+    public static String resolveNamespace(String namespace, AnnotatedType type) {
+        if (!isBlank(namespace))
+            return namespace;
+        return type.getMod().getId();
+    }
 }

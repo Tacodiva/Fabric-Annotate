@@ -1,4 +1,4 @@
-package sh.emberj.annotate.core.mixin;
+package sh.emberj.annotate.core.mixins;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

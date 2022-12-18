@@ -5,7 +5,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.TypePath;
 
 class AnnotatedTypeVisitor extends ClassVisitor implements Opcodes {
     private final Type _TYPE;
@@ -27,8 +26,7 @@ class AnnotatedTypeVisitor extends ClassVisitor implements Opcodes {
     }
 
     @Override
-    public AnnotationVisitor visitTypeAnnotation(final int typeRef, final TypePath typePath, final String descriptor,
-            final boolean visible) {
+    public AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
         AnnotationMeta annotation = new AnnotationMeta(Type.getType(descriptor));
         _target.addAnnotation(annotation);
         return new AnnotateAnnotationVisitor(annotation);

@@ -22,6 +22,8 @@ public class DynamicMixinClass implements Opcodes {
     }
 
     public void addMethod(IDynamicMixinMethodGenerator methodGenerator) {
+        if (!methodGenerator.getTargetType().equals(_TARGET))
+            throw new IllegalArgumentException("methodGenerator must target the same type as the class it's being added to.");
         _METHODS.add(methodGenerator);
     }
 

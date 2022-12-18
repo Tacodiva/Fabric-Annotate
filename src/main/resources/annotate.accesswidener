@@ -1,0 +1,8 @@
+accessWidener	v1	named
+
+accessible class net/minecraft/network/NetworkState$PacketHandlerInitializer
+accessible field net/minecraft/network/NetworkState$PacketHandlerInitializer packetHandlers Ljava/util/Map;
+
+accessible class net/minecraft/network/NetworkState$PacketHandler
+accessible field net/minecraft/network/NetworkState$PacketHandler packetIds Lit/unimi/dsi/fastutil/objects/Object2IntMap;
+accessible field net/minecraft/network/NetworkState$PacketHandler packetFactories Ljava/util/List;

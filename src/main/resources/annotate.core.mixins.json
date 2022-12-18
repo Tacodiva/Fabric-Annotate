@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "sh.emberj.annotate.core.mixins",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "ClientPreinitHookMixin"
+  ],
+  "server": [
+    "ServerPreinitHookMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

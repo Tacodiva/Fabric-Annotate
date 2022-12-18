@@ -24,9 +24,6 @@ import sh.emberj.annotate.core.mapping.AnoNamespace;
 
 public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
-    private static final Type _TYPE_CALLBACK_INFO = Type.getType(CallbackInfo.class);
-    private static final Type _TYPE_CALLBACK_RETURNABLE = Type.getType(CallbackInfoReturnable.class);
-
     public static enum InjectPosition {
         HEAD("HEAD"),
         TAIL("TAIL"),
@@ -98,17 +95,17 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
             final Type lastParam = mixinArguments[mixinArguments.length - 1];
 
             _HAS_PARAM_THIS = firstParam.equals(targetType);
-            _HAS_PARAM_CALLBACK_RETURNABLE = lastParam.equals(_TYPE_CALLBACK_RETURNABLE);
+            _HAS_PARAM_CALLBACK_RETURNABLE = lastParam.equals(TYPE_CALLBACK_RETURNABLE);
 
-            boolean hasCallbackInfo = lastParam.equals(_TYPE_CALLBACK_INFO);
+            boolean hasCallbackInfo = lastParam.equals(TYPE_CALLBACK_INFO);
             boolean hasReturnArg = false;
 
             if (mixinArguments.length != 1) {
                 final Type secondLastParam = mixinArguments[mixinArguments.length - 2];
-                if (secondLastParam.equals(_TYPE_CALLBACK_RETURNABLE))
+                if (secondLastParam.equals(TYPE_CALLBACK_RETURNABLE))
                     throw new AnnotateException(
                             "Second last parameter must be CallbackInfo, not CallbackInfoReturnable.");
-                if (secondLastParam.equals(_TYPE_CALLBACK_INFO)) {
+                if (secondLastParam.equals(TYPE_CALLBACK_INFO)) {
                     if (hasCallbackInfo || _HAS_PARAM_CALLBACK_RETURNABLE)
                         throw new AnnotateException("Duplicate CallbackInfo argument.");
                     if (_HAS_RETURN && !lastParam.equals(mixinReturnType))
@@ -255,7 +252,7 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
         if (_HAS_PARAM_RETURN_VAL) {
             mw.visitVarInsn(ALOAD, argInfoIdx);
-            mw.visitMethodInsn(INVOKEVIRTUAL, _TYPE_CALLBACK_RETURNABLE.getInternalName(), "getReturnValue",
+            mw.visitMethodInsn(INVOKEVIRTUAL, TYPE_CALLBACK_RETURNABLE.getInternalName(), "getReturnValue",
                     "()Ljava/lang/Object;", false);
             if (Utils.isPrimitive(_TARGET_META.getReturnType()))
                 Utils.convertFromObject(mw, _TARGET_META.getReturnType());
@@ -266,7 +263,7 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
         if (_HAS_RETURN) {
             Utils.convertToObject(mw, _MIXIN_META.getReturnType());
-            mw.visitMethodInsn(INVOKEVIRTUAL, _TYPE_CALLBACK_RETURNABLE.getInternalName(), "setReturnValue",
+            mw.visitMethodInsn(INVOKEVIRTUAL, TYPE_CALLBACK_RETURNABLE.getInternalName(), "setReturnValue",
                     "(Ljava/lang/Object;)V", false);
         }
 
@@ -284,6 +281,11 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
         if (_TARGET_IS_STATIC)
             flags |= ACC_STATIC;
         return flags;
+    }
+
+    @Override
+    public Type getTargetType() {
+        return _TARGET_META.getDeclaringType().getType();
     }
 
 }

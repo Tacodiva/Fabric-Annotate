@@ -25,14 +25,14 @@ public abstract class AnnotatedMeta {
         return hasAnnotation(Type.getType(clazz));
     }
 
-    public boolean hasAnnotation(Type type) {        
+    public boolean hasAnnotation(Type type) {
         return getAnnotationByType(type) != null;
     }
 
     public AnnotationMeta[] getAnnotationsByType(Class<?> clazz) {
         return getAnnotationsByType(Type.getType(clazz));
     }
-    
+
     public AnnotationMeta[] getAnnotationsByType(Type type) {
         return streamAnnotationsByType(type).toArray(AnnotationMeta[]::new);
     }

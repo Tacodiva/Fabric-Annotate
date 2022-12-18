@@ -43,7 +43,7 @@ public class EntrypointInstance {
         } catch (IllegalAccessException | IllegalArgumentException e) {
             throw new AnnotateException("Encountered an unexpected exception while invoking entrypoint.", e);
         } catch (InvocationTargetException e) {
-            throw new AnnotateException("Entrypoint threw an exception.", e);
+            throw new AnnotateException("Entrypoint threw an exception.", e.getCause());
         }
     }
 }

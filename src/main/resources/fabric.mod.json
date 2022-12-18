@@ -20,8 +20,11 @@
     ]
   },
 
+  "accessWidener": "annotate.accesswidener",
   "mixins": [
-    "annotate.mixins.json"
+    "annotate.core.mixins.json",
+    "annotate.resource.mixins.json",
+    "annotate.networking.mixins.json"
   ],
 
   "depends": {

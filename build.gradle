@@ -25,6 +25,10 @@ dependencies {
 	include "org.javassist:javassist:${reflections_javassist_version}"
 }
 
+loom {
+	accessWidenerPath = file("src/main/resources/annotate.accesswidener")
+}
+
 processResources {
 	inputs.property "version", project.version
 

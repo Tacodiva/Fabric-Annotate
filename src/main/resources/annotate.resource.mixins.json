@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "sh.emberj.annotate.resource.mixins",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "JsonDataLoaderMixin",
+    "TranslationStorageMixin"
+  ],
+  "client": [
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -24,6 +24,7 @@ import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.mixin.asm.DynamicMixinClass;
+import sh.emberj.annotate.mixin.asm.IDynamicMixinMethodGenerator;
 
 public class AnnotateMixins {
 
@@ -36,7 +37,19 @@ public class AnnotateMixins {
 
     private static Map<String, DynamicMixinClass> _classes = new HashMap<>();
 
-    static DynamicMixinClass getMixinClass(Type target) {
+    private static void checkHaventRun() throws AnnotateException {
+        if (_classes == null)
+            throw new AnnotateException("Already ran the mixins!");
+    }
+
+    public static void addMixin(IDynamicMixinMethodGenerator mixin) throws AnnotateException {
+        checkHaventRun();
+        DynamicMixinClass clazz = getMixinClass(mixin.getTargetType());
+        clazz.addMethod(mixin);
+    }
+
+    public static DynamicMixinClass getMixinClass(Type target) throws AnnotateException {
+        checkHaventRun();
         DynamicMixinClass clazz = _classes.get(target.toString());
         if (clazz == null) {
             clazz = new DynamicMixinClass(target, MIXINS_PACKAGE_INTERNAL + "/" + generateClassName(target));
@@ -46,9 +59,8 @@ public class AnnotateMixins {
     }
 
     public static void runMixins() throws AnnotateException {
+        checkHaventRun();
         long startTime = System.currentTimeMillis();
-        if (_classes == null)
-            throw new AnnotateException("Already ran the mixins!");
         if (_classes.isEmpty())
             return;
         File codegen;
@@ -136,7 +148,7 @@ public class AnnotateMixins {
             Method processorSelect = processorClass.getDeclaredMethod("select", MixinEnvironment.class);
             processorSelect.setAccessible(true);
             processorSelect.invoke(processor, MixinEnvironment.getCurrentEnvironment());
-            
+
             MixinEnvironment.getCurrentEnvironment().setOption(Option.DEBUG_VERBOSE, false);
         } catch (Exception e) {
             throw new AnnotateException("Encountered exception while force loading mixins.", e);

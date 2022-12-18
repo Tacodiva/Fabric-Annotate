@@ -8,7 +8,6 @@ import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.AnnotatedMethodHandler;
 import sh.emberj.annotate.core.LoadStage;
 import sh.emberj.annotate.core.asm.AnnotationMeta;
-import sh.emberj.annotate.mixin.asm.DynamicMixinClass;
 import sh.emberj.annotate.mixin.asm.InjectMethodGenerator;
 import sh.emberj.annotate.mixin.asm.InjectMethodGenerator.InjectPosition;
 
@@ -25,23 +24,22 @@ public class MixinMethodHandler extends AnnotatedMethodHandler {
         tryHandle(mixinMethod, MixinMethodTail.class, InjectPosition.TAIL);
     }
 
-    private void tryHandle(AnnotatedMethod mixinMethod, Class<?> annotation, InjectPosition position) throws AnnotateException {
+    private void tryHandle(AnnotatedMethod mixinMethod, Class<?> annotation, InjectPosition position)
+            throws AnnotateException {
         AnnotationMeta mixinAnnotation = mixinMethod.getMeta().getAnnotationByType(annotation);
         if (mixinAnnotation != null) {
             Type targetType = mixinAnnotation.getTypeParam("type");
-            DynamicMixinClass mixinClass = AnnotateMixins.getMixinClass(targetType);
-            InjectMethodGenerator mixin = new InjectMethodGenerator(mixinMethod, position, targetType,
-                    mixinAnnotation);
-            mixinClass.addMethod(mixin);
+            AnnotateMixins.addMixin(new InjectMethodGenerator(mixinMethod, position, targetType,
+                    mixinAnnotation));
         }
     }
 
     @Override
     public void postHandle() {
         try {
-			AnnotateMixins.runMixins();
-		} catch (AnnotateException e) {
-			throw new RuntimeException(e);
-		}
+            AnnotateMixins.runMixins();
+        } catch (AnnotateException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
