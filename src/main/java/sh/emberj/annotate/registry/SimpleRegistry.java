@@ -6,21 +6,23 @@ import java.util.Map;
 
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.Annotate;
+import sh.emberj.annotate.core.AnnotateException;
 
-public class SimpleRegistry<T> extends GenericRegistry<T> implements Iterable<T> {
+public class SimpleRegistry<T> extends FreezableRegistry<T> implements Iterable<T> {
 
     protected final Map<Identifier, T> _registry;
 
-    @SuppressWarnings("unchecked")
-    public SimpleRegistry(Identifier id) {
-        super(id);
+    public SimpleRegistry(Identifier id, Class<T> typeClass) {
+        super(id, typeClass);
         _registry = new HashMap<>();
     }
 
     @Override
-    public void register(Identifier key, T value) {
+    public void register(Identifier key, T value) throws AnnotateException {
+        ensureNotFrozen();
         if (_registry.putIfAbsent(key, value) != null) {
-            Annotate.LOG.warn("Key '" + key + "' is already present in the registry '" + getIdentifier() + "'. Replacing with new value.");
+            Annotate.LOG.warn("Key '" + key + "' is already present in the registry '" + getIdentifier()
+                    + "'. Replacing with new value.");
             _registry.put(key, value);
         }
     }

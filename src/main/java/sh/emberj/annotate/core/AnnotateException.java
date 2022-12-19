@@ -72,7 +72,8 @@ public class AnnotateException extends Exception {
     }
 
     public AnnotateException(String cause, String member, Class<?> clazz, ModContainer mod, Throwable e) {
-        super(cause, e);
+        super(e != null && e.getCause() instanceof AnnotateException aeCause ? aeCause.getMessage() : cause,
+                e != null && e.getCause() instanceof AnnotateException aeCause ? aeCause.getCause() : e);
         this._problemMember = member;
         this._problemClass = clazz;
         this._problemMod = mod;
@@ -175,7 +176,7 @@ public class AnnotateException extends Exception {
             error.append("\n");
             error.append("\n");
             error.append("Load Stage: ");
-            error.append(""+Annotate.getLoadStage());
+            error.append("" + Annotate.getLoadStage());
             if (_problemMod != null)
                 error.append("\nCulprit Mod: " + _problemMod.getMetadata().getName() + " ("
                         + _problemMod.getMetadata().getId() + ")");

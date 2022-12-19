@@ -32,8 +32,12 @@ public class AnnotatedTypeMeta extends AnnotatedMeta {
     }
 
     public static AnnotatedTypeMeta readMetadata(Type type, boolean allowNotFound) throws AnnotateException {
-        if (_CAHCE.containsKey(type.getClassName()))
-            return _CAHCE.get(type.getClassName());
+        if (_CAHCE.containsKey(type.getClassName())) {
+            AnnotatedTypeMeta meta = _CAHCE.get(type.getClassName());
+            if (meta == null && !allowNotFound)
+                throw new AnnotateException("Class '" + type.getClassName() + "' not found.");
+            return meta;
+        }
         AnnotatedTypeMeta meta;
         try {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -41,7 +45,7 @@ public class AnnotatedTypeMeta extends AnnotatedMeta {
             if (classStream == null) {
                 if (allowNotFound) {
                     Annotate.LOG.warn("Could not find class '" + type.getInternalName() + "'.");
-                    _CAHCE.put(type.getClassName(), null);                    
+                    _CAHCE.put(type.getClassName(), null);
                     return null;
                 }
                 throw new AnnotateException("Class '" + type.getClassName() + "' not found.");
@@ -125,5 +129,10 @@ public class AnnotatedTypeMeta extends AnnotatedMeta {
         if (_class != null)
             return _class;
         return _class = Utils.loadClass(_TYPE);
+    }
+
+    @Override
+    public String toString() {
+        return _TYPE.toString();
     }
 }

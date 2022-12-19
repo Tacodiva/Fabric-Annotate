@@ -150,7 +150,7 @@ public class Annotate {
             // This is safe because ScannableAnnotation can only be put on annotations
             @SuppressWarnings("unchecked")
             Class<? extends Annotation> annotation = (Class<? extends Annotation>) annotationClass;
-            Set<Class<?>> annotatedClasses = _REFLECTIONS.getTypesAnnotatedWith(annotation, false);
+            Set<Class<?>> annotatedClasses = _REFLECTIONS.getTypesAnnotatedWith(annotation, true);
             for (Class<?> annotatedClass : annotatedClasses) {
                 AnnotatedType annotatedType = new AnnotatedType(annotatedClass);
                 _TYPES.add(annotatedType);

@@ -21,8 +21,7 @@ import net.minecraft.network.packet.c2s.login.LoginQueryResponseC2SPacket;
 import net.minecraft.network.packet.s2c.login.LoginQueryRequestS2CPacket;
 import net.minecraft.network.packet.s2c.login.LoginSuccessS2CPacket;
 import net.minecraft.text.Text;
-import sh.emberj.annotate.core.Annotate;
-import sh.emberj.annotate.networking.AnnotateNetServer;
+import sh.emberj.annotate.networking.ServerValidatorRegistry;
 
 @Mixin(ClientLoginNetworkHandler.class)
 public abstract class ClientLoginNetworkHandlerMixin {
@@ -45,7 +44,7 @@ public abstract class ClientLoginNetworkHandlerMixin {
 
     @Inject(method = "onQueryRequest", at = @At("HEAD"), cancellable = true)
     private void onQueryRequest(LoginQueryRequestS2CPacket packet, CallbackInfo info) {
-        if (packet.getChannel().equals(AnnotateNetServer.ANNOTATE_CHANNEL)) {
+        if (packet.getChannel().equals(ServerValidatorRegistry.ANNOTATE_CHANNEL)) {
             info.cancel();
 
             PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
@@ -55,10 +54,11 @@ public abstract class ClientLoginNetworkHandlerMixin {
         }
     }
 
-    @Inject(method="onSuccess", at=@At("HEAD"))
+    @Inject(method = "onSuccess", at = @At("HEAD"))
     public void onSuccess(LoginSuccessS2CPacket packet, CallbackInfo info) {
         if (!_hasReceivedInfo.get()) {
-            Annotate.LOG.info("Joining server with no Annotate!");
+            onDisconnected(Text.of("Cannot connect to server! Server not running the Annotate mod."));
+            info.cancel();
         }
     }
 }

@@ -78,22 +78,32 @@ public class AnnotateIdentifier {
      */
     public static Identifier createIdentifier(String namespace, String path, AnnotatedType type)
             throws AnnotateException {
-        namespace = resolveNamespace(namespace, type);
+        return createIdentifier(namespace, path, type.getMod(), type.getAsClass().getSimpleName());
+    }
+
+    public static Identifier createIdentifier(String namespace, String path, AnnotatedMethod method)
+            throws AnnotateException {
+        return createIdentifier(namespace, path, method.getMod(), method.getName());
+    }
+
+    public static Identifier createIdentifier(String namespace, String path, AnnotatedMod mod, String javaName)
+            throws AnnotateException {
+        namespace = resolveNamespace(namespace, mod);
 
         if (isBlank(path)) {
-            path = camelCaseToSnakeCase(type.getAsClass().getSimpleName());
+            path = camelCaseToSnakeCase(javaName);
         }
 
         try {
             return new Identifier(namespace, path);
         } catch (InvalidIdentifierException e) {
-            throw new AnnotateException(e.getMessage(), type);
+            throw new AnnotateException(e.getMessage());
         }
     }
 
-    public static String resolveNamespace(String namespace, AnnotatedType type) {
+    public static String resolveNamespace(String namespace, AnnotatedMod mod) {
         if (!isBlank(namespace))
             return namespace;
-        return type.getMod().getId();
+        return mod.getId();
     }
 }

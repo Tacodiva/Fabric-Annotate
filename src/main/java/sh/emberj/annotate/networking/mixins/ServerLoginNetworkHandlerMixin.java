@@ -17,7 +17,7 @@ import net.minecraft.network.packet.c2s.login.LoginQueryResponseC2SPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerLoginNetworkHandler;
 import net.minecraft.text.Text;
-import sh.emberj.annotate.networking.AnnotateNetServer;
+import sh.emberj.annotate.networking.ServerValidatorRegistry;
 
 @Mixin(ServerLoginNetworkHandler.class)
 public abstract class ServerLoginNetworkHandlerMixin {
@@ -46,7 +46,7 @@ public abstract class ServerLoginNetworkHandlerMixin {
     @Redirect(method = "tick", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerLoginNetworkHandler;acceptPlayer()V"))
     public void tick(ServerLoginNetworkHandler handler) {
         if (!_hasSentInfo) {
-            connection.send(AnnotateNetServer.createValidationPacket());
+            connection.send(ServerValidatorRegistry.INSTANCE.createValidationPacket());
             _hasSentInfo = true;
         }
 
@@ -57,7 +57,7 @@ public abstract class ServerLoginNetworkHandlerMixin {
 
     @Inject(method = "onQueryResponse", at = @At("HEAD"), cancellable = true)
     private void onQueryResponse(LoginQueryResponseC2SPacket packet, CallbackInfo ci) {
-        if (packet.getQueryId() == AnnotateNetServer.ANNOTATE_QUERY_ID) {
+        if (packet.getQueryId() == ServerValidatorRegistry.ANNOTATE_QUERY_ID) {
             ci.cancel();
             PacketByteBuf response = packet.getResponse();
             if (response == null) {

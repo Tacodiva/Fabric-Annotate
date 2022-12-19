@@ -44,6 +44,7 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
     private final AnnotatedMethodMeta _MIXIN_META;
     private final AnnotatedTypeMeta _MIXIN_TYPE_META;
     private final AnnotatedMethodMeta _TARGET_META;
+    private final AnnotatedTypeMeta _TARGET_TYPE_META;
     private final InjectPosition _POSITION;
 
     private final boolean _TARGET_IS_STATIC;
@@ -58,6 +59,7 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
         _MIXIN = mixinMethod;
         _MIXIN_META = _MIXIN.getMeta();
         _MIXIN_TYPE_META = AnnotatedTypeMeta.readMetadata(_MIXIN.getDeclaringClass());
+        _TARGET_TYPE_META = AnnotatedTypeMeta.readMetadata(targetType);
         _POSITION = targetPosition;
 
         if (Utils.isClassLoaded(targetType.getClassName()))
@@ -285,7 +287,7 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
     @Override
     public Type getTargetType() {
-        return _TARGET_META.getDeclaringType().getType();
+        return _TARGET_TYPE_META.getType();
     }
 
 }

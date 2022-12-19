@@ -1,8 +1,6 @@
 package sh.emberj.annotate.test;
 
-import sh.emberj.annotate.registry.Register;
-
-@Register(registry = AnimalRegistry.ID)
+@RegisterAnimal
 public class Sheep extends Animal {
 
     @Override
