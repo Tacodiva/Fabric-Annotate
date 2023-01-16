@@ -12,7 +12,7 @@ import sh.emberj.annotate.core.AnnotateAnnotation;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface NetCallback {
-    public NetworkSide side();
+    public NetworkSide value();
 
     public boolean executeAsync() default false;
 

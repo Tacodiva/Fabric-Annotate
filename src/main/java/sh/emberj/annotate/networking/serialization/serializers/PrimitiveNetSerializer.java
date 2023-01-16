@@ -27,6 +27,8 @@ public class PrimitiveNetSerializer implements INetSerializer {
             buf.writeLong((long) object);
         else if (objectClass == Double.class)
             buf.writeDouble((double) object);
+        else if (objectClass == String.class)
+            buf.writeString((String) object);
         else if (objectClass == Identifier.class)
             buf.writeIdentifier((Identifier) object);
         else
@@ -37,6 +39,7 @@ public class PrimitiveNetSerializer implements INetSerializer {
     @Override
     @SuppressWarnings("unchecked")
     public <T> T tryDeserialize(Class<T> objectClass, PacketByteBuf buf) throws AnnotateException {
+        // Safety first!
         if (objectClass == Boolean.class)
             return (T) (Boolean) buf.readBoolean();
         else if (objectClass == Character.class)
@@ -53,6 +56,8 @@ public class PrimitiveNetSerializer implements INetSerializer {
             return (T) (Long) buf.readLong();
         else if (objectClass == Double.class)
             return (T) (Double) buf.readDouble();
+        else if (objectClass == String.class)
+            return (T) buf.readString();
         else if (objectClass == Identifier.class)
             return (T) buf.readIdentifier();
         else

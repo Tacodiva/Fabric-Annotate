@@ -2,10 +2,12 @@ package sh.emberj.annotate.networking.callback;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.network.ClientConnection;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.server.network.ServerPlayerEntity;
 import sh.emberj.annotate.core.AnnotateException;
+import sh.emberj.annotate.networking.serialization.Nothing;
 
 public class NetworkCallbacks {
     private NetworkCallbacks() {
@@ -23,56 +25,32 @@ public class NetworkCallbacks {
     }
 
     @Environment(EnvType.CLIENT)
-    public static <T> void executeServerbound(ServerboundCallback<T> callback, T param) {
-        NetCallbackInfo info = getCallbackInfo(callback, NetworkSide.SERVERBOUND);   
-        
+    @SuppressWarnings("resource")
+    public static <T> void execute(ServerboundCallback<T> callback, T param) {
+        NetCallbackInfo info = getCallbackInfo(callback, NetworkSide.SERVERBOUND);
+        MinecraftClient.getInstance().player.networkHandler.getConnection().send(new NetCallbackPacketC2S(info, param));
     }
 
-    public static <T> void executeClientbound(ClientConnection client, ClientboundCallback<T> callback, T param) {
+    public static <T> void execute(ClientConnection client, ClientboundCallback<T> callback, T param) {
         NetCallbackInfo info = getCallbackInfo(callback, NetworkSide.CLIENTBOUND);
+        client.send(new NetCallbackPacketS2C(info, param));
     }
 
-    public static <T> void executeClientbound(ServerPlayerEntity player, ClientboundCallback<T> callback, T param) {
-        executeClientbound(player.networkHandler.connection, callback, param);
-    }
-
-    @Environment(EnvType.CLIENT)
-    public static <T> void executeServerbound(ParamOnly<T> callback, T param) {
-        executeServerbound((ctx, p) -> callback.invoke(p), param);
-    }
-
-    public static <T> void executeClientbound(ServerPlayerEntity player, ParamOnly<T> callback, T param) {
-        executeClientbound(player, (ctx, p) -> callback.invoke(p), param);
-    }
-
-    public static <T> void executeClientbound(ClientConnection client, ParamOnly<T> callback, T param) {
-        executeClientbound(client, (ctx, p) -> callback.invoke(p), param);
+    public static <T> void execute(ServerPlayerEntity player, ClientboundCallback<T> callback, T param) {
+        execute(player.networkHandler.connection, callback, param);
     }
 
     @Environment(EnvType.CLIENT)
-    public static void executeServerbound(ServerboundCtxOnly callback) {
-        executeServerbound((ctx, p) -> callback.invoke(ctx), null);
+    public static void execute(ServerboundCallback<Nothing> callback) {
+        execute(callback, Nothing.INSTANCE);
     }
 
-    public static void executeClientbound(ServerPlayerEntity player, ClientboundCtxOnly callback) {
-        executeClientbound(player, (ctx, p) -> callback.invoke(ctx), null);
+    public static void execute(ClientConnection client, ClientboundCallback<Nothing> callback) {
+        execute(client, callback, Nothing.INSTANCE);
     }
 
-    public static void executeClientbound(ClientConnection client, ClientboundCtxOnly callback) {
-        executeClientbound(client, (ctx, p) -> callback.invoke(ctx), null);
-    }
-
-    @Environment(EnvType.CLIENT)
-    public static <T> void executeServerbound(Neither callback) {
-        executeServerbound((ctx, p) -> callback.invoke(), null);
-    }
-
-    public static <T> void executeClientbound(ServerPlayerEntity player, Neither callback) {
-        executeClientbound(player, (ctx, p) -> callback.invoke(), null);
-    }
-
-    public static <T> void executeClientbound(ClientConnection client, Neither callback) {
-        executeClientbound(client, (ctx, p) -> callback.invoke(), null);
+    public static void execute(ServerPlayerEntity player, ClientboundCallback<Nothing> callback) {
+        execute(player, callback, Nothing.INSTANCE);
     }
 
     @FunctionalInterface
@@ -86,27 +64,6 @@ public class NetworkCallbacks {
     }
 
     @FunctionalInterface
-    @Environment(EnvType.CLIENT)
-    public interface ServerboundCtxOnly {
-        public void invoke(ServerboundCallbackContext ctx);
-    }
-
-    @FunctionalInterface
     public interface ClientboundCallback<T> extends AmbiguousCallback<ClientboundCallbackContext, T> {
-    }
-
-    @FunctionalInterface
-    public interface ClientboundCtxOnly {
-        public void invoke(ClientboundCallbackContext ctx);
-    }
-
-    @FunctionalInterface
-    public interface ParamOnly<T> {
-        public void invoke(T param);
-    }
-
-    @FunctionalInterface
-    public interface Neither {
-        public void invoke();
     }
 }

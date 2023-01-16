@@ -25,33 +25,29 @@ public class NetCallbackPacketS2C implements INativeClientboundPacket {
         info = NetCallbackRegistry.INSTANCE.get(infoId);
         if (info == null)
             throw new AnnotateException("Invalid network callback id '" + infoId + "'.");
-        if (info.hasParameterArg()) {
-            parameter = NetSerializerRegistry.INSTANCE.deserialize(info.getParameterArgClass(), buf);
-        }
+        parameter = NetSerializerRegistry.INSTANCE.deserialize(info.getParameterArgClass(), buf);
     }
 
     @Override
     public void write(PacketByteBuf buf) {
         buf.writeIdentifier(info.getIdentifier());
-        if (info.hasParameterArg()) {
-            try {
-                NetSerializerRegistry.INSTANCE.serialize(parameter, buf);
-            } catch (AnnotateException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            NetSerializerRegistry.INSTANCE.serialize(parameter, buf);
+        } catch (AnnotateException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void apply(ClientPlayNetworkHandler ctx) {   
+    public void apply(ClientPlayNetworkHandler ctx) {
         if (info.isExecutedAsynchronously()) {
-            runCallback();
+            runCallback(ctx);
         } else {
-            MinecraftClient.getInstance().execute(() -> runCallback());
+            MinecraftClient.getInstance().execute(() -> runCallback(ctx));
         }
     }
 
-    private void runCallback() {
-        
+    private void runCallback(ClientPlayNetworkHandler ctx) {
+        info.invoke(ctx, parameter);
     }
 }

@@ -2,7 +2,6 @@ package sh.emberj.annotate.core;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
-import sh.emberj.annotate.test.CoolTesting;
 
 public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 
@@ -14,7 +13,7 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 
 	@Override
 	public void onPreLaunch() {
-		CoolTesting.run();
+		// CoolTesting.run();
 		_instance = this;
 
 		Annotate.setLoadStage(LoadStage.PRELAUNCH);

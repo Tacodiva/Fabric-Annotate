@@ -1,18 +1,30 @@
 package sh.emberj.annotate.networking.callback;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaConversionException;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+
 import org.objectweb.asm.Type;
 
 import net.minecraft.network.NetworkSide;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotatedMethod;
+import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
+import sh.emberj.annotate.networking.callback.NetworkCallbacks.AmbiguousCallback;
 import sh.emberj.annotate.registry.IIdentifiable;
 
 public class NetCallbackInfo implements IIdentifiable {
 
-    private static final Type TYPE_CTX_CLIENTBOUND = Type.getType(ClientboundCallbackContext.class);
-    private static final Type TYPE_CTX_SERVERBOUND = Type.getType(ServerboundCallbackContext.class);
+    private static final Class<?> CLASS_CTX_CLIENTBOUND = ClientboundCallbackContext.class;
+    private static final Class<?> CLASS_CTX_SERVERBOUND = ServerboundCallbackContext.class;
+
+    private static final Type TYPE_CTX_CLIENTBOUND = Type.getType(CLASS_CTX_CLIENTBOUND);
+    private static final Type TYPE_CTX_SERVERBOUND = Type.getType(CLASS_CTX_SERVERBOUND);
 
     private static Type getContextType(NetworkSide side) {
         if (side == NetworkSide.CLIENTBOUND)
@@ -22,13 +34,54 @@ public class NetCallbackInfo implements IIdentifiable {
         return null;
     }
 
+    private static Class<?> getContextClass(NetworkSide side) {
+        if (side == NetworkSide.CLIENTBOUND)
+            return CLASS_CTX_CLIENTBOUND;
+        if (side == NetworkSide.SERVERBOUND)
+            return CLASS_CTX_SERVERBOUND;
+        return null;
+    }
+
+    private static AmbiguousCallback<Object, Object> createCallback(NetCallbackInfo info) throws AnnotateException {
+        AnnotatedMethodMeta meta = info.getMethodMeta();
+        MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+        MethodType targetDescriptor = MethodType.methodType(void.class, getContextClass(info.getSide()),
+                info.getParameterArgClass());
+
+        MethodHandle method;
+        try {
+            method = lookup.findStatic(meta.getDeclaringType().getAsClass(), meta.getName(), targetDescriptor);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new AnnotateException("Exception while finding callback method handle.", e);
+        }
+
+        String targetName = "invoke";
+        MethodType metafactoryDescriptor = MethodType.methodType(AmbiguousCallback.class);
+
+        CallSite metafactory;
+        try {
+            metafactory = LambdaMetafactory.metafactory(lookup, targetName, metafactoryDescriptor,
+                    targetDescriptor.generic().changeReturnType(void.class), method, targetDescriptor);
+        } catch (LambdaConversionException e) {
+            throw new AnnotateException("Unexpected exception while creating lambda metafactory.", e);
+        }
+
+        try {
+            return (AmbiguousCallback<Object, Object>) metafactory.getTarget().invoke();
+        } catch (Throwable e) {
+            throw new AnnotateException("Unexpected exception while calling lambda metafactory.", e);
+        }
+    }
+
     private final AnnotatedMethodMeta _METHOD_META;
     private final Identifier _ID;
     private final NetworkSide _SIDE;
     private final boolean _EXECUTE_ASYNC;
 
+    private final AmbiguousCallback<Object, Object> _CALLBACK;
+
     private final Class<?> _ARG_PARAM_CLASS;
-    private final boolean _HAS_ARG_CONTEXT;
 
     public NetCallbackInfo(Identifier id, NetworkSide side, boolean executeAsync, AnnotatedMethod method)
             throws AnnotateException {
@@ -39,27 +92,15 @@ public class NetCallbackInfo implements IIdentifiable {
 
         Type[] methodArgs = _METHOD_META.getArgTypes();
 
-        if (methodArgs.length > 2)
-            throw new AnnotateException("Too many arguments on network callback. Expected a maximum of 2.", method);
+        if (methodArgs.length != 2)
+            throw new AnnotateException("Wrong number of arguments on network callback. Expected 2.", method);
 
-        if (methodArgs.length == 2) {
-            _HAS_ARG_CONTEXT = true;
-            _ARG_PARAM_CLASS = methodArgs[1].getClass();
-            if (!methodArgs[0].equals(getContextType(side)))
-                throw new AnnotateException("Wrong first argument on network callback. Exepected "
-                        + getContextType(side) + " but found " + methodArgs[0] + ".", method);
-        } else if (methodArgs.length == 1) {
-            if (methodArgs[0].equals(getContextType(side))) {
-                _ARG_PARAM_CLASS = null;
-                _HAS_ARG_CONTEXT = true;
-            } else {
-                _ARG_PARAM_CLASS = methodArgs[0].getClass();
-                _HAS_ARG_CONTEXT = false;
-            }
-        } else {
-            _ARG_PARAM_CLASS = null;
-            _HAS_ARG_CONTEXT = false;
-        }
+        _ARG_PARAM_CLASS = Utils.loadClass(methodArgs[1]);
+        if (!methodArgs[0].equals(getContextType(side)))
+            throw new AnnotateException("Wrong first argument on network callback. Exepected "
+                    + getContextType(side) + " but found " + methodArgs[0] + ".", method);
+
+        _CALLBACK = createCallback(this);
     }
 
     public AnnotatedMethodMeta getMethodMeta() {
@@ -74,14 +115,6 @@ public class NetCallbackInfo implements IIdentifiable {
         return _ARG_PARAM_CLASS;
     }
 
-    public boolean hasParameterArg() {
-        return _ARG_PARAM_CLASS != null;
-    }
-
-    public boolean hasContextArg() {
-        return _HAS_ARG_CONTEXT;
-    }
-
     public boolean isExecutedAsynchronously() {
         return _EXECUTE_ASYNC;
     }
@@ -89,5 +122,9 @@ public class NetCallbackInfo implements IIdentifiable {
     @Override
     public Identifier getIdentifier() {
         return _ID;
+    }
+
+    public void invoke(Object context, Object parameter) {
+        _CALLBACK.invoke(context, parameter);
     }
 }

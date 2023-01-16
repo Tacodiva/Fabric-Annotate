@@ -17,14 +17,14 @@ public class CoolTesting {
     public static class MyStringThing {
         public String value;
 
-        public MyStringThing(String value) {
-            this.value = value;
+        public void test(Object a, Object b) {
+            
         }
     }
 
-    public static Function<String, MyStringThing> easyCreateFactory() {
-        return MyStringThing::new;
-    }
+    // public static AmbiguousCallback2<?, ?> easyCreateFactory(MyStringThing thing) {
+        // return thing::test;
+    // }
 
     public static Function<String, Object> createFactory() throws AnnotateException {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
@@ -60,15 +60,6 @@ public class CoolTesting {
             reader.accept(tcv, 0);
         } catch (Exception e) {
             e.printStackTrace();
-        }
-        
-        try {
-            Function<String, Object> func = createFactory();
-
-            MyStringThing thing = (MyStringThing) func.apply("Hello!");
-            System.out.println(thing.value);
-        } catch (AnnotateException e) {
-            e.showGUI();
         }
 
         System.exit(0);

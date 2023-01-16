@@ -27,23 +27,37 @@ public abstract class AnnotatedMethodHandler {
     public int getExecutionPriority() {
         return _PRIORITY;
     }
-    
-    public void preHandle() throws AnnotateException { }
+
+    public void preHandle() throws AnnotateException {
+    }
 
     public abstract void handle(AnnotatedMethod method) throws AnnotateException;
 
-    public void postHandle() throws AnnotateException { }
-    
+    public void postHandle() throws AnnotateException {
+    }
+
     // vvv Static Helper Methods vvv
 
     protected static <T extends Annotation> T tryGetAnnotation(AnnotatedMethod method, Class<T> rawAnnotation)
             throws AnnotateException {
-        return method.getMethod().getAnnotation(rawAnnotation);
+        return tryGetAnnotation(method, rawAnnotation, false);
     }
 
     protected static <T extends Annotation> T[] tryGetAnnotations(AnnotatedMethod method, Class<T> rawAnnotation)
             throws AnnotateException {
-        return method.getMethod().getAnnotationsByType(rawAnnotation);
+        return tryGetAnnotations(method, rawAnnotation, false);
+    }
+
+    protected static <T extends Annotation> T tryGetAnnotation(AnnotatedMethod method, Class<T> rawAnnotation,
+            boolean force)
+            throws AnnotateException {
+        return method.getMethod(force).getAnnotation(rawAnnotation);
+    }
+
+    protected static <T extends Annotation> T[] tryGetAnnotations(AnnotatedMethod method, Class<T> rawAnnotation,
+            boolean force)
+            throws AnnotateException {
+        return method.getMethod(force).getAnnotationsByType(rawAnnotation);
     }
 
 }

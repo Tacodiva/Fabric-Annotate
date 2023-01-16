@@ -4,10 +4,10 @@ import java.util.function.BooleanSupplier;
 
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import io.netty.buffer.Unpooled;
 import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.NetworkSide;
 import net.minecraft.server.integrated.IntegratedServer;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.Translation;
 import sh.emberj.annotate.core.Annotate;
@@ -16,6 +16,9 @@ import sh.emberj.annotate.core.LoadStage;
 import sh.emberj.annotate.entrypoint.Entrypoint;
 import sh.emberj.annotate.mixin.MixinMethodHead;
 import sh.emberj.annotate.mixin.MixinMethodTail;
+import sh.emberj.annotate.networking.callback.ClientboundCallbackContext;
+import sh.emberj.annotate.networking.callback.NetCallback;
+import sh.emberj.annotate.networking.callback.NetworkCallbacks;
 
 @AnnotateScan
 public class Test {
@@ -38,13 +41,18 @@ public class Test {
         // });
     }
 
+    @NetCallback(NetworkSide.CLIENTBOUND)
+    public static void clientCallback(ClientboundCallbackContext ctx, String value) {
+        Annotate.LOG.info("Received on the clinet " + value);
+    }
+    
+
     @MixinMethodHead(type = IntegratedServer.class)
     public static void tick(IntegratedServer _this, BooleanSupplier shouldKeepTicking) {
         
         if (_this.getPlayerManager().getPlayerList().size() != 0) {
-            PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-            buf.writeString("Hello, World!");
-            // AnnotateNetServer.sendNativeClientbound(_this.getPlayerManager().getPlayerList().get(0), new Identifier("annotate:test_b"), buf);            
+            ServerPlayerEntity spe = _this.getPlayerManager().getPlayerList().get(0);
+            NetworkCallbacks.execute(spe, Test::clientCallback, "Hello, world!");
         }
     }
 

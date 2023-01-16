@@ -17,11 +17,11 @@ public class NetCallbackMethodHandler extends AnnotatedMethodHandler {
 
     @Override
     public void handle(AnnotatedMethod method) throws AnnotateException {
-        NetCallback annotation = tryGetAnnotation(method, NetCallback.class);
+        NetCallback annotation = tryGetAnnotation(method, NetCallback.class, true);
         if (annotation == null)
             return;
         Identifier id = AnnotateIdentifier.createIdentifier(annotation.path(), annotation.namespace(), method);
-        NetCallbackRegistry.INSTANCE.register(id, new NetCallbackInfo(id, annotation.side(), annotation.executeAsync(), method));
+        NetCallbackRegistry.INSTANCE.register(id, new NetCallbackInfo(id, annotation.value(), annotation.executeAsync(), method));
     }
 
 }

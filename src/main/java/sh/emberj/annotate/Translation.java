@@ -77,7 +77,7 @@ public @interface Translation {
             String namespace = annotation.annotation().getStringParam("namespace");
             String type = annotation.annotation().getStringParam("type");
 
-            namespace = AnnotateIdentifier.resolveNamespace(namespace, annotation.type());
+            namespace = AnnotateIdentifier.resolveNamespace(namespace, annotation.type().getMod());
 
             String langKey;
             if (namespace.equals(NO_NAMESPACE)) {
