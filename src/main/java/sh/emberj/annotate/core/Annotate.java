@@ -1,22 +1,16 @@
 package sh.emberj.annotate.core;
 
 import java.io.File;
-import java.lang.annotation.Annotation;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.reflections.Reflections;
-import org.reflections.scanners.Scanners;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
+import org.apache.commons.lang3.tuple.Pair;
+import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,54 +18,121 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.impl.util.version.StringVersion;
-import sh.emberj.annotate.core.AnnotationHandler.AnnotationInfo;
-import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
-import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
-import sh.emberj.annotate.core.asm.AnnotationMeta;
-import sh.emberj.annotate.core.mapping.AnoMapper;
-import sh.emberj.annotate.entrypoint.EntrypointManager;
+import sh.emberj.annotate.core.asm.AnnotationMetadata;
+import sh.emberj.annotate.core.asm.ClassMetadata;
+import sh.emberj.annotate.core.asm.ClassMetadataFactory;
+import sh.emberj.annotate.core.asm.MethodMetadata;
+import sh.emberj.annotate.core.tiny.TinyMapper;
 
 public class Annotate {
+    private Annotate() {
+    }
+
     public static final Logger LOG = LoggerFactory.getLogger(Annotate.class);
     public static final String ID = "annotate";
 
-    private static Annotate _instance;
-    private static AnoMapper _mapper;
-    private static Version _version;
+    private static final List<AnnotateMod> _MODS;
+    private static final Map<String, IMetaAnnotationType> _META_ANNOTATIONS;
+    private static final Map<String, BaseAnnotation> _BASE_ANNOTATIONS;
+    private static final Map<FabricLoadStage, List<ILoadListener>> _LOAD_LISTENERS;
 
-    public static Annotate getInstance() {
-        if (_instance == null)
-            try {
-                new Annotate();
-            } catch (AnnotateException e) {
-                e.showGUI();
+    private static FabricLoadStage _loadStage;
+
+    static {
+        _MODS = new ArrayList<>();
+        _META_ANNOTATIONS = new HashMap<>();
+        _BASE_ANNOTATIONS = new HashMap<>();
+        _LOAD_LISTENERS = new HashMap<>();
+        try {
+
+            for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+                AnnotateMod annotatedMod = AnnotateMod.tryCreate(mod);
+                if (annotatedMod != null)
+                    _MODS.add(annotatedMod);
             }
-        return _instance;
-    }
 
-    public static LoadStage getLoadStage() {
-        if (_instance == null)
-            return null;
-        return _instance._loadStage;
-    }
+            {
+                List<Pair<AnnotateMod, ClassMetadata>> modClasses = new ArrayList<>();
 
-    static void setLoadStage(LoadStage loadStage) {
-        Annotate inst = getInstance();
-        if (inst._loadStage != loadStage) {
-            LOG.info("Load stage " + loadStage);
-            inst._loadStage = loadStage;
-            inst.executeHandlers(loadStage);
-            EntrypointManager.invokeEntrypoints(loadStage);
+                {
+                    final ClassLoader classLoader = Annotate.class.getClassLoader();
+                    for (AnnotateMod mod : _MODS) {
+                        for (String package_ : mod.getPackages()) {
+                            for (ClassMetadata class_ : ClassMetadataFactory.createAll(package_, classLoader))
+                                modClasses.add(Pair.of(mod, class_));
+                        }
+                    }
+                }
+
+                for (Pair<AnnotateMod, ClassMetadata> class_ : modClasses) {
+                    AnnotationMetadata metaMetaAnnotationInstance = class_.getRight()
+                            .getAnnotationByType(MetaMetaAnnotation.class);
+                    if (metaMetaAnnotationInstance == null)
+                        continue;
+                    Type metaAnnotationTypeClass = metaMetaAnnotationInstance.getClassParam("value");
+                    IMetaAnnotationType metaAnnotationType = (IMetaAnnotationType) Utils
+                            .instantiate(metaAnnotationTypeClass);
+                    _META_ANNOTATIONS.put(class_.getRight().toString(), metaAnnotationType);
+                }
+
+                for (Pair<AnnotateMod, ClassMetadata> class_ : modClasses) {
+                    for (AnnotationMetadata annotation : class_.getRight().getAnnotations()) {
+                        IMetaAnnotationType metaAnnotation = _META_ANNOTATIONS.get(annotation.getType().toString());
+                        if (metaAnnotation == null)
+                            continue;
+                        BaseAnnotation base = metaAnnotation.createBaseAnnotation(annotation, class_.getRight(),
+                                class_.getLeft());
+                        _BASE_ANNOTATIONS.put(class_.getRight().toString(), base);
+                        ClassMetadata repeatableContainer = base.getRepeatableContainer();
+                        if (repeatableContainer != null)
+                            _BASE_ANNOTATIONS.put(repeatableContainer.toString(),
+                                    new RepeatableBaseAnnotation(annotation, repeatableContainer, class_.getLeft(),
+                                            base));
+                    }
+                }
+
+                for (Pair<AnnotateMod, ClassMetadata> class_ : modClasses) {
+                    for (MethodMetadata method : class_.getRight().getMethods()) {
+                        AnnotatedMethod annotatedMethod = null;
+                        for (AnnotationMetadata annotation : method.getAnnotations()) {
+                            BaseAnnotation annotationType = _BASE_ANNOTATIONS
+                                    .get(annotation.getType().toString());
+                            if (annotationType == null)
+                                continue;
+                            if (annotatedMethod == null)
+                                annotatedMethod = new AnnotatedMethod(class_.getLeft(), method);
+                            annotationType.handleInstance(annotation, annotatedMethod);
+                        }
+                    }
+
+                    AnnotatedClass annotatedClass = null;
+                    for (AnnotationMetadata annotation : class_.getRight().getAnnotations()) {
+                        BaseAnnotation annotationType = _BASE_ANNOTATIONS
+                                .get(annotation.getType().toString());
+                        if (annotationType == null)
+                            continue;
+                        if (annotatedClass == null)
+                            annotatedClass = new AnnotatedClass(class_.getLeft(), class_.getRight());
+                        annotationType.handleInstance(annotation, annotatedClass);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            if (e instanceof AnnotateException ae)
+                ae.showGUI();
+            new AnnotateException("Error while initalizing Annotate.", e).showGUI();
         }
     }
 
-    public static File getAnnotateDirectory() {
+    public static File getDirectory() {
         Path gameDir = FabricLoader.getInstance().getGameDir();
         File annotateFolder = new File(gameDir.toFile(), ".annotate");
         if (!annotateFolder.isDirectory())
             annotateFolder.mkdir();
         return annotateFolder;
     }
+
+    private static Version _version;
 
     public static Version getVersion() {
         if (_version != null)
@@ -82,238 +143,63 @@ public class Annotate {
         return _version;
     }
 
+    private static TinyMapper _mapper;
+
+    public static TinyMapper getTinyMapper() throws AnnotateException {
+        if (_mapper != null)
+            return _mapper;
+        return _mapper = new TinyMapper();
+    }
+
     public static String getBranding() {
         return "Annotate " + getVersion().getFriendlyString();
     }
 
-    public static AnoMapper getMapper() {
-        if (_mapper != null)
-            return _mapper;
+    private static int listenerExecutionState = -1;
+
+    static void updateLoadStage(FabricLoadStage loadStage) {
         try {
-            long time = System.currentTimeMillis();
-            int beforeSize = AnnotatedTypeMeta.getCacheSize();
-            _mapper = new AnoMapper();
-            LOG.info("Loaded " + (AnnotatedTypeMeta.getCacheSize() - beforeSize) + " classes and their mappings in "
-                    + (System.currentTimeMillis() - time) + " ms");
-            return _mapper;
-        } catch (AnnotateException e) {
-            e.showGUI();
-            throw new AssertionError();
-        }
-    }
+            int oldOrdinal = _loadStage == null ? -1 : _loadStage.ordinal();
+            if (loadStage.ordinal() != oldOrdinal + 1)
+                throw new AnnotateException("Invalid load stage set " + _loadStage + " -> " + loadStage + ".");
 
-    private final Reflections _REFLECTIONS;
-    private final Set<AnnotatedMod> _MODS;
-    private final Set<AnnotatedType> _TYPES;
-    private final Set<AnnotatedMethod> _METHODS;
-    private final Set<AnnotationInfo> _ANNOTATIONS;
-
-    private final Map<LoadStage, List<AnnotatedTypeHandler>> _TYPE_HANDLERS;
-    private final Map<LoadStage, List<AnnotatedMethodHandler>> _METHOD_HANDLERS;
-    private final Map<LoadStage, List<AnnotationHandler>> _ANNOTATION_HANDLERS;
-
-    private LoadStage _loadStage;
-
-    private Annotate() throws AnnotateException {
-        _instance = this;
-        LOG.info("Starting " + getBranding());
-
-        // Step 1. Find all the mods with annotate packages
-        _MODS = new HashSet<>();
-        for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
-            AnnotatedMod annotatedMod = AnnotatedMod.tryCreate(mod);
-            if (annotatedMod != null)
-                _MODS.add(annotatedMod);
-        }
-        URL[] packageURLs = _MODS.stream()
-                .flatMap(mod -> Arrays.stream(mod.getPackages()).flatMap(p -> ClasspathHelper.forPackage(p).stream()))
-                .toArray(URL[]::new);
-
-        // _MODS.iterator().next().getResourceGenerator().generate(new TestResource());
-
-        // Step 2. Enumerate all the classes in those packages with Reflections
-        Reflections.log.info("Starting reflections scan on " + packageURLs.length + " packages.");
-        _REFLECTIONS = new Reflections(new ConfigurationBuilder().setUrls(packageURLs)
-                .setScanners(Scanners.TypesAnnotated, Scanners.MethodsAnnotated));
-
-        // Step 3. Search for all the annotations that we care about
-        // All annotations that we need to something with are themselves annotated with
-        // @AnnotateAnnotation
-        Set<Class<?>> annotations = _REFLECTIONS.getTypesAnnotatedWith(AnnotateAnnotation.class, true);
-
-        _ANNOTATIONS = new HashSet<>();
-        // Step 4. Find all the classes annotated with one of the annotations found in
-        // the above step.
-        _TYPES = new HashSet<>();
-        // Set<Class<?>> classesToScan = new HashSet<>();
-        for (Class<?> annotationClass : annotations) {
-            // This is safe because ScannableAnnotation can only be put on annotations
-            @SuppressWarnings("unchecked")
-            Class<? extends Annotation> annotation = (Class<? extends Annotation>) annotationClass;
-            Set<Class<?>> annotatedClasses = _REFLECTIONS.getTypesAnnotatedWith(annotation, true);
-            for (Class<?> annotatedClass : annotatedClasses) {
-                AnnotatedType annotatedType = new AnnotatedType(annotatedClass);
-                _TYPES.add(annotatedType);
-                _ANNOTATIONS.add(
-                        new AnnotationInfo(annotatedType.getMeta().getAnnotationByType(annotation), annotatedType));
-            }
-        }
-
-        // Step 4.5. Find all the methods to scan
-        Set<AnnotatedMethodMeta> methodsToScan = new HashSet<>();
-        for (AnnotatedType type : _TYPES) {
-            AnnotatedTypeMeta typeMeta = type.getMeta();
-
-            for (AnnotatedMethodMeta method : typeMeta.getMethods()) {
-                if (!method.hasAnnotations())
-                    continue;
-                for (Class<?> annotationClass : annotations) {
-                    AnnotationMeta annotation = method.getAnnotationByType(annotationClass);
-                    if (annotation != null) {
-                        methodsToScan.add(method);
-                        _ANNOTATIONS.add(new AnnotationInfo(annotation, type));
-                        break;
-                    }
-                }
-            }
-        }
-        _METHODS = methodsToScan.stream().map(AnnotatedMethod::new).collect(Collectors.toSet());
-
-        LOG.info("Found " + _TYPES.size() + " annotated types and " + methodsToScan.size() + " methods using "
-                + annotations.size() + " annotations.");
-
-        // Step 5. Find all the type and method handlers and store them so they can be
-        // run later
-        _TYPE_HANDLERS = new HashMap<>();
-        _METHOD_HANDLERS = new HashMap<>();
-        _ANNOTATION_HANDLERS = new HashMap<>();
-        executeTypeHandler(new HandlerHandler());
-    }
-
-    AnnotatedMod findModFromPackage(String packageName) {
-        for (AnnotatedMod mod : _MODS) {
-            if (mod.containsPackage(packageName))
-                return mod;
-        }
-        throw new RuntimeException("Could not find mod containing the package '" + packageName + "'.");
-    }
-
-    private void executeHandlers(LoadStage stage) {
-        try {
-            List<AnnotatedTypeHandler> typeHandlers = _TYPE_HANDLERS.get(stage);
-            if (typeHandlers != null) {
-                for (AnnotatedTypeHandler handler : typeHandlers)
-                    executeTypeHandler(handler);
-            }
-            List<AnnotatedMethodHandler> methodHandlers = _METHOD_HANDLERS.get(stage);
-            if (methodHandlers != null) {
-                for (AnnotatedMethodHandler handler : methodHandlers)
-                    executeMethodHandler(handler);
-            }
-            List<AnnotationHandler> annotationHandlers = _ANNOTATION_HANDLERS.get(stage);
-            if (annotationHandlers != null) {
-                for (AnnotationHandler handler : annotationHandlers)
-                    executeAnnotationHandler(handler);
-            }
-        } catch (AnnotateException e) {
-            e.showGUI();
-        }
-        if (stage != null)
-            executeHandlers(null);
-    }
-
-    private void executeMethodHandler(AnnotatedMethodHandler handler) throws AnnotateException {
-        LOG.debug("Running method handler " + handler);
-        handler.preHandle();
-        for (AnnotatedMethod method : _METHODS) {
-            try {
-                handler.handle(method);
-            } catch (AnnotateException e) {
-                e.trySet(method);
-                throw e;
-            } catch (Exception e) {
-                throw new AnnotateException("Unexpected error while handling method.", method, e);
-            }
-        }
-        handler.postHandle();
-    }
-
-    private void executeTypeHandler(AnnotatedTypeHandler handler) throws AnnotateException {
-        LOG.debug("Running type handler " + handler);
-        handler.preHandle();
-        for (AnnotatedType type : _TYPES) {
-            try {
-                handler.handle(type);
-            } catch (AnnotateException e) {
-                e.trySet(type);
-                throw e;
-            } catch (Exception e) {
-                throw new AnnotateException("Unexpected error while handling type.", type, e);
-            }
-        }
-        handler.postHandle();
-    }
-
-    private void executeAnnotationHandler(AnnotationHandler handler) throws AnnotateException {
-        LOG.debug("Running annotation handler " + handler);
-        handler.preHandle();
-        for (AnnotationInfo annotation : _ANNOTATIONS) {
-            try {
-                handler.handle(annotation);
-            } catch (AnnotateException e) {
-                e.trySet(annotation.type());
-                throw e;
-            } catch (Exception e) {
-                throw new AnnotateException("Unexpected error while handling type.", annotation.type(), e);
-            }
-        }
-        handler.postHandle();
-    }
-
-    private class HandlerHandler extends AnnotatedTypeHandler {
-        public HandlerHandler() {
-            super(null);
-        }
-
-        @Override
-        public void handle(AnnotatedType type) throws AnnotateException {
-            tryAddTypeHandler(type);
-            tryAddMethodHandler(type);
-            tryAddAnnotationHandler(type);
-        }
-
-        private void tryAddTypeHandler(AnnotatedType type) throws AnnotateException {
-            AnnotatedTypeHandler handler = tryCastInstance(type, AnnotatedTypeHandler.class);
-            if (handler == null)
+            LOG.info("Load stage " + loadStage);
+            _loadStage = loadStage;
+            List<ILoadListener> listeners = _LOAD_LISTENERS.get(_loadStage);
+            if (listeners == null)
                 return;
-            LOG.info("Found " + handler.getExecutionStage() + " stage type handler " + handler);
-            _TYPE_HANDLERS.computeIfAbsent(handler.getExecutionStage(), a -> new ArrayList<>()).add(handler);
-        }
 
-        private void tryAddMethodHandler(AnnotatedType type) throws AnnotateException {
-            AnnotatedMethodHandler handler = tryCastInstance(type, AnnotatedMethodHandler.class);
-            if (handler == null)
-                return;
-            LOG.info("Found " + handler.getExecutionStage() + " stage method handler " + handler);
-            _METHOD_HANDLERS.computeIfAbsent(handler.getExecutionStage(), a -> new ArrayList<>()).add(handler);
+            for (listenerExecutionState = 0; listenerExecutionState < listeners.size(); listenerExecutionState++) {
+                listeners.get(listenerExecutionState).onLoad();
+            }
+            listenerExecutionState = -1;
+        } catch (Exception e) {
+            if (e instanceof AnnotateException ae)
+                ae.showGUI();
+            else
+                new AnnotateException("Unknown error while loading Annotate.", e).showGUI();
         }
+    }
 
-        private void tryAddAnnotationHandler(AnnotatedType type) throws AnnotateException {
-            AnnotationHandler handler = tryCastInstance(type, AnnotationHandler.class);
-            if (handler == null)
-                return;
-            LOG.info("Found " + handler.getExecutionStage() + " stage annotation handler " + handler);
-            _ANNOTATION_HANDLERS.computeIfAbsent(handler.getExecutionStage(), a -> new ArrayList<>()).add(handler);
-        }
+    public static FabricLoadStage getLoadStage() {
+        return _loadStage;
+    }
 
-        @Override
-        public void postHandle() {
-            for (List<AnnotatedTypeHandler> typeHandlers : _TYPE_HANDLERS.values())
-                typeHandlers.sort((a, b) -> Integer.compare(a.getExecutionPriority(), b.getExecutionPriority()));
-            for (List<AnnotatedMethodHandler> methodHandlers : _METHOD_HANDLERS.values())
-                methodHandlers.sort((a, b) -> Integer.compare(a.getExecutionPriority(), b.getExecutionPriority()));
-            for (List<AnnotationHandler> annotationHandlers : _ANNOTATION_HANDLERS.values())
-                annotationHandlers.sort((a, b) -> Integer.compare(a.getExecutionPriority(), b.getExecutionPriority()));
-        }
+    public static void addLoadListener(ILoadListener listener) {
+        final FabricLoadStage listenerStage = listener.getLoadStage();
+        if (_loadStage != null && _loadStage.ordinal() > listener.getLoadStage().ordinal()
+                || (_loadStage == listener.getLoadStage() && listenerExecutionState == -1))
+            throw new IllegalStateException("Cannot add listener on stage " + listenerStage
+                    + " when already on load stage " + _loadStage + ".");
+        List<ILoadListener> listeners = _LOAD_LISTENERS.computeIfAbsent(listenerStage, ls -> new ArrayList<>());
+
+        int index = Collections.binarySearch(listeners, listener, Comparator.comparing(ILoadListener::getPriority));
+        if (index < 0)
+            index = -index - 1;
+        else
+            ++index;
+        if (listenerStage == _loadStage && listenerExecutionState != -1 && index < listenerExecutionState)
+            throw new IllegalStateException("Listener priority too low to be inserted. It should have already run.");
+        listeners.add(index, listener);
     }
 }

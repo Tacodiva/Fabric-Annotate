@@ -6,10 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import sh.emberj.annotate.core.AnnotateAnnotation;
-import sh.emberj.annotate.core.LoadStage;
+import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.handled.HandleMetaAnnotation;
 
-@AnnotateAnnotation
+@HandleMetaAnnotation(value = RegisterClassHandler.class, stage = FabricLoadStage.PRELAUNCH, priority = -90000)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
 @Repeatable(RegisterContainer.class)
@@ -20,5 +20,7 @@ public @interface Register {
 
     public String namespace() default "";
 
-    public LoadStage loadStage() default LoadStage.INIT;
+    public FabricLoadStage stage() default FabricLoadStage.PREINIT;
+
+    public int priority() default 0;
 }

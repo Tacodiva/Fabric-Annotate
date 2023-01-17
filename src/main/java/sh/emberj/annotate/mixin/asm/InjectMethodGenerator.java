@@ -14,13 +14,14 @@ import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.Utils;
-import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
-import sh.emberj.annotate.core.asm.AnnotatedTypeMeta;
-import sh.emberj.annotate.core.asm.AnnotationMeta;
-import sh.emberj.annotate.core.mapping.AnoMappedClass;
-import sh.emberj.annotate.core.mapping.AnoMappedMethod;
-import sh.emberj.annotate.core.mapping.AnoMapper;
-import sh.emberj.annotate.core.mapping.AnoNamespace;
+import sh.emberj.annotate.core.asm.AnnotationMetadata;
+import sh.emberj.annotate.core.asm.ClassMetadata;
+import sh.emberj.annotate.core.asm.ClassMetadataFactory;
+import sh.emberj.annotate.core.asm.MethodMetadata;
+import sh.emberj.annotate.core.tiny.TinyMappedClass;
+import sh.emberj.annotate.core.tiny.TinyMappedMethod;
+import sh.emberj.annotate.core.tiny.TinyMapper;
+import sh.emberj.annotate.core.tiny.TinyNamespace;
 
 public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
@@ -41,10 +42,10 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
     }
 
     private final AnnotatedMethod _MIXIN;
-    private final AnnotatedMethodMeta _MIXIN_META;
-    private final AnnotatedTypeMeta _MIXIN_TYPE_META;
-    private final AnnotatedMethodMeta _TARGET_META;
-    private final AnnotatedTypeMeta _TARGET_TYPE_META;
+    private final MethodMetadata _MIXIN_META;
+    private final ClassMetadata _MIXIN_TYPE_META;
+    private final MethodMetadata _TARGET_META;
+    private final ClassMetadata _TARGET_TYPE_META;
     private final InjectPosition _POSITION;
 
     private final boolean _TARGET_IS_STATIC;
@@ -55,11 +56,11 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
     private final boolean _HAS_RETURN;
 
     public InjectMethodGenerator(AnnotatedMethod mixinMethod, InjectPosition targetPosition, Type targetType,
-            AnnotationMeta mixinAnnotation) throws AnnotateException {
+            AnnotationMetadata mixinAnnotation) throws AnnotateException {
         _MIXIN = mixinMethod;
-        _MIXIN_META = _MIXIN.getMeta();
-        _MIXIN_TYPE_META = AnnotatedTypeMeta.readMetadata(_MIXIN.getDeclaringClass());
-        _TARGET_TYPE_META = AnnotatedTypeMeta.readMetadata(targetType);
+        _MIXIN_META = _MIXIN.getMetadata();
+        _MIXIN_TYPE_META = _MIXIN_META.getDeclaringClass();
+        _TARGET_TYPE_META = ClassMetadataFactory.create(targetType);
         _POSITION = targetPosition;
 
         if (Utils.isClassLoaded(targetType.getClassName()))
@@ -68,27 +69,26 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
 
         String unmappedTargetName = mixinAnnotation.getStringParam("targetName");
         if (unmappedTargetName == null || unmappedTargetName.isBlank()) {
-            unmappedTargetName = mixinMethod.getName();
+            unmappedTargetName = _MIXIN_META.getName();
         }
-        final AnoMapper mapper = Annotate.getMapper();
-        final AnoNamespace namespace = mapper.getNamespace("named");
+        final TinyMapper mapper = Annotate.getTinyMapper();
+        final TinyNamespace namespace = mapper.getNamespace("named");
 
-        final Set<AnnotatedMethodMeta> potentialTargets = new HashSet<>();
+        final Set<MethodMetadata> potentialTargets = new HashSet<>();
         {
-            final AnoMappedClass targetMapped = mapper.getClass(targetType, namespace);
+            final TinyMappedClass targetMapped = mapper.getClass(targetType, namespace);
             if (targetMapped != null) {
-                for (AnoMappedMethod mappedMethod : targetMapped.getMethods(unmappedTargetName))
-                    potentialTargets.add(mappedMethod.getMethodMeta());
+                for (TinyMappedMethod mappedMethod : targetMapped.getMethods(unmappedTargetName))
+                    potentialTargets.add(mappedMethod.getMethodMetadata());
             } else {
-                final AnnotatedTypeMeta targetTypeMeta = AnnotatedTypeMeta.readMetadata(targetType);
-                for (AnnotatedMethodMeta potentialTarget : targetTypeMeta.getMethodsByName(unmappedTargetName))
+                final ClassMetadata targetTypeMeta = ClassMetadataFactory.create(targetType);
+                for (MethodMetadata potentialTarget : targetTypeMeta.getMethodsByName(unmappedTargetName))
                     potentialTargets.add(potentialTarget);
             }
         }
 
-        final AnnotatedMethodMeta mixinMeta = mixinMethod.getMeta();
-        final Type[] mixinArguments = mixinMeta.getArgTypes();
-        Type mixinReturnType = mixinMeta.getReturnType();
+        final Type[] mixinArguments = _MIXIN_META.getArgTypes();
+        Type mixinReturnType = _MIXIN_META.getReturnType();
 
         _HAS_RETURN = !mixinReturnType.equals(Type.VOID_TYPE);
 
@@ -126,20 +126,20 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
             _HAS_PARAM_CALLBACK_RETURNABLE = false;
         }
 
-        if (!mixinMeta.hasModifier(ACC_STATIC))
+        if (!_MIXIN_META.hasModifier(ACC_STATIC))
             throw new AnnotateException("Mixin method must be static.");
 
-        if (!mixinMeta.hasModifier(ACC_PUBLIC))
+        if (!_MIXIN_META.hasModifier(ACC_PUBLIC))
             throw new AnnotateException("Mixin method must be public.");
 
-        if (mixinMeta.hasModifier(ACC_ABSTRACT))
+        if (_MIXIN_META.hasModifier(ACC_ABSTRACT))
             throw new AnnotateException("Mixin method cannot be abstract.");
 
         if (_HAS_RETURN && _HAS_PARAM_CALLBACK_RETURNABLE)
             throw new AnnotateException(
                     "Mixin cannot have a non-void return type and a CallbackInfoReturnable parameter.");
 
-        AnnotatedMethodMeta target = null;
+        MethodMetadata target = null;
 
         if (potentialTargets.size() == 0)
             throw new AnnotateException(
@@ -151,7 +151,7 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
                 - (_HAS_PARAM_RETURN_VAL ? 1 : 0);
         final int argLength = argIdxEnd - argIdxStart;
 
-        outer: for (AnnotatedMethodMeta potentialTarget : potentialTargets) {
+        outer: for (MethodMetadata potentialTarget : potentialTargets) {
             final Type[] arguments = potentialTarget.getArgTypes();
 
             if (arguments.length != argLength)
@@ -260,7 +260,7 @@ public class InjectMethodGenerator implements IDynamicMixinMethodGenerator {
                 Utils.convertFromObject(mw, _TARGET_META.getReturnType());
         }
 
-        mw.visitMethodInsn(INVOKESTATIC, _MIXIN_TYPE_META.getType().getInternalName(), _MIXIN.getName(),
+        mw.visitMethodInsn(INVOKESTATIC, _MIXIN_TYPE_META.getType().getInternalName(), _MIXIN_META.getName(),
                 _MIXIN_META.getDescriptor(), false);
 
         if (_HAS_RETURN) {

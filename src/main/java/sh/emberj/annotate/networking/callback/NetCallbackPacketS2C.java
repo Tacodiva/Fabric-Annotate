@@ -48,6 +48,6 @@ public class NetCallbackPacketS2C implements INativeClientboundPacket {
     }
 
     private void runCallback(ClientPlayNetworkHandler ctx) {
-        info.invoke(ctx, parameter);
+        info.invoke(new ClientboundCallbackContext(ctx), parameter);
     }
 }

@@ -13,7 +13,7 @@ import sh.emberj.annotate.core.AnnotateEntrypoint;
 public class ServerPreinitHookMixin {
     @Redirect(method = "main([Ljava/lang/String;)V", at = @At(value = "INVOKE", target = "Lnet/fabricmc/loader/impl/game/minecraft/Hooks;startServer(Ljava/io/File;Ljava/lang/Object;)V"))
     private static void startServer(File runDir, Object gameInstance) {
-        AnnotateEntrypoint entrypoints = AnnotateEntrypoint.getInstance();
+        AnnotateEntrypoint entrypoints = AnnotateEntrypoint.INSTANCE;
         entrypoints.onPreInitialize();
         Hooks.startClient(runDir, gameInstance);
         entrypoints.onPostInitialize();

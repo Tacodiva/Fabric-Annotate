@@ -6,7 +6,7 @@ import net.minecraft.network.NetworkSide;
 import net.minecraft.network.Packet;
 import net.minecraft.network.listener.PacketListener;
 import net.minecraft.util.Identifier;
-import sh.emberj.annotate.core.AnnotatedType;
+import sh.emberj.annotate.core.AnnotatedClass;
 import sh.emberj.annotate.registry.IIdentifiable;
 
 public class NativePacketType<T extends PacketListener> implements IIdentifiable {
@@ -14,11 +14,11 @@ public class NativePacketType<T extends PacketListener> implements IIdentifiable
     private final Identifier _IDENTIFIER;
 
     private final Class<? extends Packet<T>> _PACKET_CLASS;
-    private final AnnotatedType _PACKET_TYPE;
+    private final AnnotatedClass _PACKET_TYPE;
 
     private final NetworkSide _SIDE;
 
-    public NativePacketType(Identifier identifier, NetworkSide side, AnnotatedType packetType,
+    public NativePacketType(Identifier identifier, NetworkSide side, AnnotatedClass packetType,
             Class<? extends Packet<T>> packetClass) {
         _IDENTIFIER = identifier;
         _PACKET_CLASS = packetClass;
@@ -36,7 +36,7 @@ public class NativePacketType<T extends PacketListener> implements IIdentifiable
         return _PACKET_CLASS;
     }
 
-    public AnnotatedType getPacketType() {
+    public AnnotatedClass getPacketType() {
         return _PACKET_TYPE;
     }
 

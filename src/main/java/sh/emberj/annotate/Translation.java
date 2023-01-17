@@ -4,18 +4,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
-import sh.emberj.annotate.core.AnnotateAnnotation;
-import sh.emberj.annotate.core.AnnotateException;
-import sh.emberj.annotate.core.AnnotateIdentifier;
-import sh.emberj.annotate.core.AnnotateScan;
-import sh.emberj.annotate.core.AnnotationHandler;
-import sh.emberj.annotate.core.LoadStage;
-
-@AnnotateAnnotation
+// @HandleMetaAnnotation(TranslationAnnotationHandler.class)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface Translation {
@@ -41,51 +31,51 @@ public @interface Translation {
 
     public String namespace() default "";
 
-    public static class TranslationManager {
-        private TranslationManager() {
-        }
+    // public static class TranslationManager {
+    //     private TranslationManager() {
+    //     }
 
-        private static Map<String, String> _translations = new HashMap<>();
+    //     private static Map<String, String> _translations = new HashMap<>();
 
-        public static void addTranslation(String key, String value) {
-            if (_translations == null)
-                throw new IllegalStateException("Cannot add translations after translations have already been loaded!");
-            _translations.put(key, value);
-        }
+    //     public static void addTranslation(String key, String value) {
+    //         if (_translations == null)
+    //             throw new IllegalStateException("Cannot add translations after translations have already been loaded!");
+    //         _translations.put(key, value);
+    //     }
 
-        public static void applyTranslations(Map<String, String> translations) {
-            for (Entry<String, String> translation : _translations.entrySet()) {
-                translations.put(translation.getKey(), translation.getValue());
-            }
-            _translations = null;
-        }
-    }
+    //     public static void applyTranslations(Map<String, String> translations) {
+    //         for (Entry<String, String> translation : _translations.entrySet()) {
+    //             translations.put(translation.getKey(), translation.getValue());
+    //         }
+    //         _translations = null;
+    //     }
+    // }
 
-    @AnnotateScan
-    public static class TranslationAnnotationHandler extends AnnotationHandler {
+    // @AnnotateScan
+    // public static class TranslationAnnotationHandler extends AnnotationHandler {
 
-        public TranslationAnnotationHandler() {
-            super(LoadStage.PREINIT, 0);
-        }
+    //     public TranslationAnnotationHandler() {
+    //         super(FabricLoadStage.PREINIT, 0);
+    //     }
 
-        @Override
-        public void handle(AnnotationInfo annotation) throws AnnotateException {
-            if (!annotation.isOfClass(Translation.class))
-                return;
-            String key = annotation.annotation().getStringParam("key");
-            String value = annotation.annotation().getStringParam("value");
-            String namespace = annotation.annotation().getStringParam("namespace");
-            String type = annotation.annotation().getStringParam("type");
+    //     @Override
+    //     public void handle(AnnotationInfo annotation) throws AnnotateException {
+    //         if (!annotation.isOfClass(Translation.class))
+    //             return;
+    //         String key = annotation.annotation().getStringParam("key");
+    //         String value = annotation.annotation().getStringParam("value");
+    //         String namespace = annotation.annotation().getStringParam("namespace");
+    //         String type = annotation.annotation().getStringParam("type");
 
-            namespace = AnnotateIdentifier.resolveNamespace(namespace, annotation.type().getMod());
+    //         namespace = AnnotateIdentifier.resolveNamespace(namespace, annotation.type().getMod());
 
-            String langKey;
-            if (namespace.equals(NO_NAMESPACE)) {
-                langKey = type + key;
-            } else {
-                langKey = type + namespace + "." + key;
-            }
-            TranslationManager.addTranslation(langKey, value);
-        }
-    }
+    //         String langKey;
+    //         if (namespace.equals(NO_NAMESPACE)) {
+    //             langKey = type + key;
+    //         } else {
+    //             langKey = type + namespace + "." + key;
+    //         }
+    //         TranslationManager.addTranslation(langKey, value);
+    //     }
+    // }
 }

@@ -14,7 +14,7 @@ import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.Utils;
-import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
+import sh.emberj.annotate.core.asm.MethodMetadata;
 import sh.emberj.annotate.networking.callback.NetworkCallbacks.AmbiguousCallback;
 import sh.emberj.annotate.registry.IIdentifiable;
 
@@ -43,7 +43,7 @@ public class NetCallbackInfo implements IIdentifiable {
     }
 
     private static AmbiguousCallback<Object, Object> createCallback(NetCallbackInfo info) throws AnnotateException {
-        AnnotatedMethodMeta meta = info.getMethodMeta();
+        MethodMetadata meta = info.getMethodMeta();
         MethodHandles.Lookup lookup = MethodHandles.lookup();
 
         MethodType targetDescriptor = MethodType.methodType(void.class, getContextClass(info.getSide()),
@@ -51,7 +51,7 @@ public class NetCallbackInfo implements IIdentifiable {
 
         MethodHandle method;
         try {
-            method = lookup.findStatic(meta.getDeclaringType().getAsClass(), meta.getName(), targetDescriptor);
+            method = lookup.findStatic(meta.getDeclaringClass().getAsClass(), meta.getName(), targetDescriptor);
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new AnnotateException("Exception while finding callback method handle.", e);
         }
@@ -74,18 +74,18 @@ public class NetCallbackInfo implements IIdentifiable {
         }
     }
 
-    private final AnnotatedMethodMeta _METHOD_META;
+    private final MethodMetadata _METHOD_META;
     private final Identifier _ID;
     private final NetworkSide _SIDE;
     private final boolean _EXECUTE_ASYNC;
 
-    private final AmbiguousCallback<Object, Object> _CALLBACK;
+    private AmbiguousCallback<Object, Object> _callback;
 
     private final Class<?> _ARG_PARAM_CLASS;
 
     public NetCallbackInfo(Identifier id, NetworkSide side, boolean executeAsync, AnnotatedMethod method)
             throws AnnotateException {
-        _METHOD_META = method.getMeta();
+        _METHOD_META = method.getMetadata();
         _ID = id;
         _SIDE = side;
         _EXECUTE_ASYNC = executeAsync;
@@ -99,11 +99,9 @@ public class NetCallbackInfo implements IIdentifiable {
         if (!methodArgs[0].equals(getContextType(side)))
             throw new AnnotateException("Wrong first argument on network callback. Exepected "
                     + getContextType(side) + " but found " + methodArgs[0] + ".", method);
-
-        _CALLBACK = createCallback(this);
     }
 
-    public AnnotatedMethodMeta getMethodMeta() {
+    public MethodMetadata getMethodMeta() {
         return _METHOD_META;
     }
 
@@ -125,6 +123,12 @@ public class NetCallbackInfo implements IIdentifiable {
     }
 
     public void invoke(Object context, Object parameter) {
-        _CALLBACK.invoke(context, parameter);
+        try {
+            if (_callback == null)
+                _callback = createCallback(this);
+            _callback.invoke(context, parameter);
+        } catch (AnnotateException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -1,27 +1,22 @@
 package sh.emberj.annotate.networking.callback;
 
+import net.minecraft.network.NetworkSide;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotateIdentifier;
-import sh.emberj.annotate.core.AnnotateScan;
 import sh.emberj.annotate.core.AnnotatedMethod;
-import sh.emberj.annotate.core.AnnotatedMethodHandler;
-import sh.emberj.annotate.core.LoadStage;
+import sh.emberj.annotate.core.asm.AnnotationMetadata;
+import sh.emberj.annotate.core.handled.IMethodAnnotationHandler;
 
-@AnnotateScan
-public class NetCallbackMethodHandler extends AnnotatedMethodHandler {
-
-    public NetCallbackMethodHandler() {
-        super(LoadStage.PRELAUNCH);
-    }
+public class NetCallbackMethodHandler implements IMethodAnnotationHandler {
 
     @Override
-    public void handle(AnnotatedMethod method) throws AnnotateException {
-        NetCallback annotation = tryGetAnnotation(method, NetCallback.class, true);
-        if (annotation == null)
-            return;
-        Identifier id = AnnotateIdentifier.createIdentifier(annotation.path(), annotation.namespace(), method);
-        NetCallbackRegistry.INSTANCE.register(id, new NetCallbackInfo(id, annotation.value(), annotation.executeAsync(), method));
+    public void handleMethodAnnotation(AnnotatedMethod method, AnnotationMetadata annotation) throws AnnotateException {
+        Identifier id = AnnotateIdentifier.createIdentifier(annotation.getStringParam("path"),
+                annotation.getStringParam("namespace"), method);
+        NetCallbackRegistry.INSTANCE.register(id,
+                new NetCallbackInfo(id, annotation.getEnumParam("value", NetworkSide.class),
+                        annotation.getBooleanParam("executeAsync", false), method));
     }
 
 }

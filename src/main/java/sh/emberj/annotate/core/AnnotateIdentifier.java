@@ -24,7 +24,7 @@ public class AnnotateIdentifier {
      * @return The snake case string
      */
     private static String camelCaseToSnakeCase(String text) {
-        if (text.length() == 0)
+        if (isBlank(text))
             return "";
 
         StringBuilder sb = new StringBuilder();
@@ -56,7 +56,7 @@ public class AnnotateIdentifier {
      * @return The identifier with the defaults applied where required
      * @throws AnnotateException If the identifier is invalid
      */
-    public static Identifier createIdentifier(String id, AnnotatedType type) throws AnnotateException {
+    public static Identifier createIdentifier(String id, AnnotatedClass type) throws AnnotateException {
         if (isBlank(id))
             return createIdentifier(null, null, type);
         int idx = id.indexOf(Identifier.NAMESPACE_SEPARATOR);
@@ -76,17 +76,17 @@ public class AnnotateIdentifier {
      * @return The identifier with the defaults applied where required
      * @throws AnnotateException If the identifier is invalid
      */
-    public static Identifier createIdentifier(String namespace, String path, AnnotatedType type)
+    public static Identifier createIdentifier(String namespace, String path, AnnotatedClass type)
             throws AnnotateException {
-        return createIdentifier(namespace, path, type.getMod(), type.getAsClass().getSimpleName());
+        return createIdentifier(namespace, path, type.getMod(), type.getMetadata().getSimpleName());
     }
 
     public static Identifier createIdentifier(String namespace, String path, AnnotatedMethod method)
             throws AnnotateException {
-        return createIdentifier(namespace, path, method.getMod(), method.getName());
+        return createIdentifier(namespace, path, method.getMod(), method.getMetadata().getName());
     }
 
-    public static Identifier createIdentifier(String namespace, String path, AnnotatedMod mod, String javaName)
+    public static Identifier createIdentifier(String namespace, String path, AnnotateMod mod, String javaName)
             throws AnnotateException {
         namespace = resolveNamespace(namespace, mod);
 
@@ -101,9 +101,9 @@ public class AnnotateIdentifier {
         }
     }
 
-    public static String resolveNamespace(String namespace, AnnotatedMod mod) {
+    public static String resolveNamespace(String namespace, AnnotateMod mod) {
         if (!isBlank(namespace))
             return namespace;
-        return mod.getId();
+        return mod.getID();
     }
 }

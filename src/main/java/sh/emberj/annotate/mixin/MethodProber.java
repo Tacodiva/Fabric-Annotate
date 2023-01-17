@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 
 import sh.emberj.annotate.core.AnnotateException;
-import sh.emberj.annotate.core.asm.AnnotatedMethodMeta;
+import sh.emberj.annotate.core.asm.MethodMetadata;
 import sh.emberj.annotate.mixin.asm.DynamicMixinAnnotation;
 import sh.emberj.annotate.mixin.asm.IDynamicMixinMethodGenerator;
 
@@ -15,7 +15,7 @@ public class MethodProber {
     private MethodProber() {
     }
 
-    private static final String ASM_NAME = MethodProber.class.getCanonicalName();
+    private static final String ASM_NAME = MethodProber.class.getCanonicalName().replace('.', '/');
 
     private static boolean isProbing;
     private static String probeResults;
@@ -38,7 +38,7 @@ public class MethodProber {
         probeResults = value;
     }
 
-    public static void setupProbe(AnnotatedMethodMeta target, String value) throws AnnotateException {
+    public static void setupProbe(MethodMetadata target, String value) throws AnnotateException {
         AnnotateMixins.addMixin(new MethodProbeGenerator(target, value));
     }
 
@@ -59,18 +59,18 @@ public class MethodProber {
     }
 
     private static class MethodProbeGenerator implements IDynamicMixinMethodGenerator {
-        private final AnnotatedMethodMeta _TARGET;
+        private final MethodMetadata _TARGET;
         private final String _VALUE;
-    
-        public MethodProbeGenerator(AnnotatedMethodMeta target, String value) {
+
+        public MethodProbeGenerator(MethodMetadata target, String value) {
             _TARGET = target;
             _VALUE = value;
         }
-    
+
         @Override
         public DynamicMixinAnnotation generateAnnotation() {
             DynamicMixinAnnotation inject = new DynamicMixinAnnotation(Inject.class, true);
-    
+
             DynamicMixinAnnotation at = new DynamicMixinAnnotation(At.class, true);
             at.setParam("value", "HEAD");
             inject.setAnnotationArrayParam("at", at);
@@ -78,17 +78,17 @@ public class MethodProber {
             inject.setParam("cancellable", true);
             return inject;
         }
-    
+
         @Override
         public String generateDescriptor() {
             return Type.getMethodDescriptor(Type.VOID_TYPE, TYPE_CALLBACK_INFO);
         }
-    
+
         @Override
         public int generateMethodFlags() {
             return ACC_PRIVATE | ACC_STATIC;
         }
-    
+
         @Override
         public void generateMethod(MethodVisitor mw) {
             // if (MethodProber.isProbing()) {
@@ -96,32 +96,32 @@ public class MethodProber {
                     MethodProber.ASM_IS_PROBING_DESC, false);
             Label returnLabel = new Label();
             mw.visitJumpInsn(IFEQ, returnLabel);
-    
+
             // MethodProber.setProbeResults(_VALUE);
             mw.visitLdcInsn(_VALUE);
             mw.visitMethodInsn(INVOKESTATIC, MethodProber.ASM_NAME, MethodProber.ASM_SET_PROBE_RESULT_NAME,
                     MethodProber.ASM_SET_PROBE_RESULT_DESC, false);
-    
+
             // callbackInfo.cancel()
             mw.visitVarInsn(ALOAD, 0);
             mw.visitMethodInsn(INVOKEVIRTUAL, TYPE_CALLBACK_INFO.getInternalName(), "cancel", "()V", false);
-    
+
             // }
             mw.visitLabel(returnLabel);
-    
+
             // return;
             mw.visitInsn(RETURN);
         }
-    
+
         @Override
         public String getNamePrefix() {
             return "methodProbe";
         }
-    
+
         @Override
         public Type getTargetType() {
-            return _TARGET.getDeclaringType().getType();
+            return _TARGET.getDeclaringClass().getType();
         }
-    
+
     }
 }

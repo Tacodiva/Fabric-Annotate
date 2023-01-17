@@ -4,15 +4,15 @@ import java.util.WeakHashMap;
 
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.AnnotateException;
+import sh.emberj.annotate.core.FabricLoadStage;
 import sh.emberj.annotate.core.Instance;
-import sh.emberj.annotate.core.LoadStage;
 import sh.emberj.annotate.mixin.MethodProber;
 import sh.emberj.annotate.networking.callback.NetworkCallbacks.AmbiguousCallback;
 import sh.emberj.annotate.registry.Register;
 import sh.emberj.annotate.registry.RegistryManager;
 import sh.emberj.annotate.registry.SimpleRegistry;
 
-@Register(registry = RegistryManager.ID, loadStage = LoadStage.PRELAUNCH)
+@Register(registry = RegistryManager.ID, stage = FabricLoadStage.PRELAUNCH)
 public class NetCallbackRegistry extends SimpleRegistry<NetCallbackInfo> {
 
     public static String ID = "annotate:net_callback";

@@ -8,7 +8,7 @@
   
   "description": "A standalone library which takes advantage of Java's annotations to speed up mod development.",
   "authors": [
-    "Tacodude"
+    "Tacodiva"
   ],
 
   "entrypoints": {
@@ -23,8 +23,8 @@
   "accessWidener": "annotate.accesswidener",
   "mixins": [
     "annotate.core.mixins.json",
-    "annotate.resource.mixins.json",
-    "annotate.networking.mixins.json"
+    "annotate.networking.mixins.json",
+    "annotate.resource.mixins.json"
   ],
 
   "depends": {

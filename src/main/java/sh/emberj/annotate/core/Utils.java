@@ -1,6 +1,7 @@
 package sh.emberj.annotate.core;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -121,5 +122,32 @@ public class Utils implements Opcodes {
         } catch (Exception e) {
             throw new AnnotateException("Error while injecting URL into classpath.", e);
         }
+    }
+
+    public static Object instantiate(Type type) throws AnnotateException {
+        return instantiate(loadClass(type));
+    }
+
+    public static Object instantiate(Class<?> clazz) throws AnnotateException {
+        try {
+            return clazz.getConstructor().newInstance();
+        } catch (NoSuchMethodException e) {
+            throw new AnnotateException(
+                    "Failed to create instance. Could not find empty constructor. Make sure " + clazz
+                            + " has a public constructor that takes no parameters.",
+                    null, Type.getType(clazz), null, null);
+        } catch (InvocationTargetException e) {
+            throw new AnnotateException(
+                    "Exception encountered from blank constructor of " + clazz + ".", null, Type.getType(clazz), null,
+                    e.getCause());
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | SecurityException e) {
+            throw new AnnotateException(
+                    "Exception encountered while creating instance of " + clazz + ".", null, Type.getType(clazz), null,
+                    e);
+        }
+    }
+
+    public static String descriptorFromClassName(String className) {
+        return "L" + className.replace('.', '/') + ";";
     }
 }

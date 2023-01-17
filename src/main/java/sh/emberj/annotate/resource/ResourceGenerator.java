@@ -11,19 +11,19 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModOrigin;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
-import sh.emberj.annotate.core.AnnotatedMod;
+import sh.emberj.annotate.core.AnnotateMod;
 import sh.emberj.annotate.core.Utils;
 
 public class ResourceGenerator {
 
     private static ResourceGenerator _instance;
 
-    public static ResourceGenerator tryCreate(AnnotatedMod mod) throws AnnotateException {
+    public static ResourceGenerator tryCreate(AnnotateMod mod) throws AnnotateException {
         if (mod.getResourceGenerationDirectory() == null)
             return null;
         if (!FabricLoader.getInstance().isDevelopmentEnvironment())
             return null;
-        final ModOrigin origin = mod.getModContainer().getOrigin();
+        final ModOrigin origin = mod.getFabricMod().getOrigin();
         if (origin.getKind() != ModOrigin.Kind.PATH || origin.getPaths().size() == 0)
             return null;
         final Path modPath = origin.getPaths().get(0);
@@ -32,12 +32,12 @@ public class ResourceGenerator {
             return null;
         final File resourceFile = new File(modFile, mod.getResourceGenerationDirectory());
         if (!resourceFile.isDirectory()) {
-            Annotate.LOG.warn("Cannot generate resources for mod '" + mod.getId() + "'. '" + resourceFile
+            Annotate.LOG.warn("Cannot generate resources for mod '" + mod.getID() + "'. '" + resourceFile
                     + "' does not exist or was not a directory.");
             return null;
         }
         Annotate.LOG.info("Found resources path '" + resourceFile + "' and class path '" + modFile + "' for mod '"
-                + mod.getId() + "'.");
+                + mod.getID() + "'.");
         if (_instance != null)
             return _instance;
         return _instance = new ResourceGenerator(modFile);
@@ -47,7 +47,7 @@ public class ResourceGenerator {
 
     private ResourceGenerator(File resourcesFile) throws AnnotateException {
         _RESOURCES_FILE = resourcesFile;
-        _CLASSPATH_DIR = new File(Annotate.getAnnotateDirectory(), "resourcegen");
+        _CLASSPATH_DIR = new File(Annotate.getDirectory(), "resourcegen");
         try {
             FileUtils.deleteDirectory(_CLASSPATH_DIR);
         } catch (IOException e) {

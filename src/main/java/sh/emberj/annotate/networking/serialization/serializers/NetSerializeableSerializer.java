@@ -61,7 +61,7 @@ public class NetSerializeableSerializer implements INetSerializer {
                     e);
         }
 
-        MethodType targetDescriptor = MethodType.methodType(clazz, String.class);
+        MethodType targetDescriptor = MethodType.methodType(clazz, PacketByteBuf.class);
         String targetName = "apply";
 
         MethodType metafactoryDescriptor = MethodType.methodType(Function.class);

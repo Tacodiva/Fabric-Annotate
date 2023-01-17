@@ -9,10 +9,8 @@ import net.minecraft.network.NetworkSide;
 import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
-import sh.emberj.annotate.Translation;
 import sh.emberj.annotate.core.Annotate;
-import sh.emberj.annotate.core.AnnotateScan;
-import sh.emberj.annotate.core.LoadStage;
+import sh.emberj.annotate.core.FabricLoadStage;
 import sh.emberj.annotate.entrypoint.Entrypoint;
 import sh.emberj.annotate.mixin.MixinMethodHead;
 import sh.emberj.annotate.mixin.MixinMethodTail;
@@ -20,7 +18,7 @@ import sh.emberj.annotate.networking.callback.ClientboundCallbackContext;
 import sh.emberj.annotate.networking.callback.NetCallback;
 import sh.emberj.annotate.networking.callback.NetworkCallbacks;
 
-@AnnotateScan
+// @AnnotateScan
 public class Test {
 
     @Entrypoint
@@ -43,7 +41,7 @@ public class Test {
 
     @NetCallback(NetworkSide.CLIENTBOUND)
     public static void clientCallback(ClientboundCallbackContext ctx, String value) {
-        Annotate.LOG.info("Received on the clinet " + value);
+        Annotate.LOG.info("Received on the client " + value);
     }
     
 
@@ -56,13 +54,13 @@ public class Test {
         }
     }
 
-    @Translation(key = "singleplayer", value = "Yay!", type = "menu.", namespace = Translation.NO_NAMESPACE)
-    @Entrypoint(stage = LoadStage.PRELAUNCH)
+    // @Translation(key = "singleplayer", value = "Yay!", type = "menu.", namespace = Translation.NO_NAMESPACE)
+    @Entrypoint(stage = FabricLoadStage.PRELAUNCH)
     public static void onInit0() {
         Annotate.LOG.info("On init 0!");
     }
 
-    @Entrypoint(stage = LoadStage.PREINIT)
+    @Entrypoint(stage = FabricLoadStage.PREINIT, priority = -1)
     public static void onInit1() {
         Annotate.LOG.info("On init 1!");
     }
@@ -72,7 +70,7 @@ public class Test {
         Annotate.LOG.info("On init 2!");
     }
 
-    @Entrypoint(stage = LoadStage.POSTINIT)
+    @Entrypoint(stage = FabricLoadStage.POSTINIT)
     public static void onInit3() {
         Annotate.LOG.info("On init 3!");
     }

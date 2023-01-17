@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.util.Date;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.objectweb.asm.Type;
 
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.impl.gui.FabricGuiEntry;
@@ -16,7 +17,7 @@ import net.fabricmc.loader.impl.gui.FabricStatusTree.FabricTreeWarningLevel;
 public class AnnotateException extends Exception {
 
     private ModContainer _problemMod;
-    private Class<?> _problemClass;
+    private Type _problemClass;
     private String _problemMember;
 
     public AnnotateException() {
@@ -31,28 +32,30 @@ public class AnnotateException extends Exception {
         this(cause, null, null, null, e);
     }
 
-    public AnnotateException(String cause, AnnotatedType type) {
-        this(cause, null, type.getAsClass(), type.getMod().getModContainer(), null);
+    public AnnotateException(String cause, AnnotatedClass type) {
+        this(cause, null, type.getMetadata().getType(), type.getMod().getFabricMod(), null);
     }
 
-    public AnnotateException(String cause, AnnotatedType type, Throwable e) {
-        this(cause, null, type.getAsClass(), type.getMod().getModContainer(), e);
+    public AnnotateException(String cause, AnnotatedClass type, Throwable e) {
+        this(cause, null, type.getMetadata().getType(), type.getMod().getFabricMod(), e);
     }
 
     public AnnotateException(String cause, AnnotatedMethod method) {
-        this(cause, method.getName(), method.getDeclaringClass(), method.getMod().getModContainer(), null);
+        this(cause, method.getMetadata().getName(), method.getMetadata().getDeclaringClass().getType(),
+                method.getMod().getFabricMod(), null);
     }
 
     public AnnotateException(String cause, AnnotatedMethod method, Throwable e) {
-        this(cause, method.getName(), method.getDeclaringClass(), method.getMod().getModContainer(), e);
+        this(cause, method.getMetadata().getName(), method.getMetadata().getDeclaringClass().getType(),
+                method.getMod().getFabricMod(), null);
     }
 
-    public AnnotateException(String cause, AnnotatedMod mod) {
-        this(cause, null, null, mod.getModContainer(), null);
+    public AnnotateException(String cause, AnnotateMod mod) {
+        this(cause, null, null, mod.getFabricMod(), null);
     }
 
-    public AnnotateException(String cause, AnnotatedMod mod, Throwable e) {
-        this(cause, null, null, mod.getModContainer(), e);
+    public AnnotateException(String cause, AnnotateMod mod, Throwable e) {
+        this(cause, null, null, mod.getFabricMod(), e);
     }
 
     public AnnotateException(String cause, ModContainer mod) {
@@ -63,15 +66,15 @@ public class AnnotateException extends Exception {
         this(cause, null, null, mod, e);
     }
 
-    public AnnotateException(String cause, String member, AnnotatedType type) {
-        this(cause, member, type.getAsClass(), type.getMod().getModContainer(), null);
+    public AnnotateException(String cause, String member, AnnotatedClass type) {
+        this(cause, member, type.getMetadata().getType(), type.getMod().getFabricMod(), null);
     }
 
-    public AnnotateException(String cause, String member, AnnotatedType type, Throwable e) {
-        this(cause, member, type.getAsClass(), type.getMod().getModContainer(), e);
+    public AnnotateException(String cause, String member, AnnotatedClass type, Throwable e) {
+        this(cause, member, type.getMetadata().getType(), type.getMod().getFabricMod(), e);
     }
 
-    public AnnotateException(String cause, String member, Class<?> clazz, ModContainer mod, Throwable e) {
+    public AnnotateException(String cause, String member, Type clazz, ModContainer mod, Throwable e) {
         super(e != null && e.getCause() instanceof AnnotateException aeCause ? aeCause.getMessage() : cause,
                 e != null && e.getCause() instanceof AnnotateException aeCause ? aeCause.getCause() : e);
         this._problemMember = member;
@@ -84,9 +87,17 @@ public class AnnotateException extends Exception {
             _problemMod = mod;
     }
 
-    public void trySetClass(Class<?> clazz) {
+    public void setMod(ModContainer mod) {
+        _problemMod = mod;
+    }
+
+    public void trySetClass(Type clazz) {
         if (_problemClass == null)
             _problemClass = clazz;
+    }
+
+    public void setClass(Type clazz) {
+        _problemClass = clazz;
     }
 
     public void trySetMember(String member) {
@@ -94,15 +105,19 @@ public class AnnotateException extends Exception {
             _problemMember = member;
     }
 
-    public void trySet(AnnotatedType type) {
-        trySetClass(type.getAsClass());
-        trySetMod(type.getMod().getModContainer());
+    public void setMember(String member) {
+        _problemMember = member;
+    }
+
+    public void trySet(AnnotatedClass type) {
+        trySetClass(type.getMetadata().getType());
+        trySetMod(type.getMod().getFabricMod());
     }
 
     public void trySet(AnnotatedMethod method) {
-        trySetMember(method.getName());
-        trySetClass(method.getDeclaringClass());
-        trySetMod(method.getMod().getModContainer());
+        trySetMember(method.getMetadata().getName());
+        trySetClass(method.getMetadata().getDeclaringClass().getType());
+        trySetMod(method.getMod().getFabricMod());
     }
 
     public void showGUI() {
@@ -129,7 +144,7 @@ public class AnnotateException extends Exception {
         else
             Annotate.LOG.error("Culprit Mod: Unknown");
         if (_problemClass != null)
-            Annotate.LOG.error("Culprit Class: " + _problemClass.getName());
+            Annotate.LOG.error("Culprit Class: " + _problemClass.getClassName());
         if (_problemMember != null)
             Annotate.LOG.error("Culprit Member: " + _problemMember);
         if (getCause() != null)
@@ -157,7 +172,7 @@ public class AnnotateException extends Exception {
 
             if (_problemClass != null)
                 tabErr.addChild(
-                        "Culprit Class: " + _problemClass.getName()).iconType = FabricStatusTree.ICON_TYPE_JAVA_CLASS;
+                        "Culprit Class: " + _problemClass.getClassName()).iconType = FabricStatusTree.ICON_TYPE_JAVA_CLASS;
             if (_problemMember != null)
                 tabErr.addChild(
                         "Culprit Member: " + _problemMember).iconType = FabricStatusTree.ICON_TYPE_JAVA_CLASS;
@@ -181,7 +196,7 @@ public class AnnotateException extends Exception {
                 error.append("\nCulprit Mod: " + _problemMod.getMetadata().getName() + " ("
                         + _problemMod.getMetadata().getId() + ")");
             if (_problemClass != null)
-                error.append("\nCulprit Class: " + _problemClass.getName());
+                error.append("\nCulprit Class: " + _problemClass.getClassName());
             if (_problemMember != null)
                 error.append("\nCulprit Member: " + _problemMember);
             if (getCause() != null)

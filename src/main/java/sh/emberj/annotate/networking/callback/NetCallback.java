@@ -6,9 +6,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import net.minecraft.network.NetworkSide;
-import sh.emberj.annotate.core.AnnotateAnnotation;
+import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.handled.HandleMetaAnnotation;
 
-@AnnotateAnnotation
+@HandleMetaAnnotation(value = NetCallbackMethodHandler.class, stage = FabricLoadStage.PRELAUNCH, priority = -5000)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface NetCallback {
