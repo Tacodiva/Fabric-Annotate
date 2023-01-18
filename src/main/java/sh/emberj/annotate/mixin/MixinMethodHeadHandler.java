@@ -14,7 +14,7 @@ public class MixinMethodHeadHandler implements IMethodAnnotationHandler {
     @Override
     public void handleMethodAnnotation(AnnotatedMethod method, AnnotationMetadata annotation)
             throws AnnotateException {
-        Type targetType = annotation.getClassParam("type");
+        Type targetType = annotation.getClassParam("value");
         AnnotateMixins.addMixin(new InjectMethodGenerator(method, InjectPosition.HEAD, targetType, annotation));
     }
 

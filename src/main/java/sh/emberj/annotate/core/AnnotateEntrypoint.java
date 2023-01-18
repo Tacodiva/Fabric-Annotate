@@ -10,20 +10,20 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 
 	@Override
 	public void onPreLaunch() {
-		Annotate.updateLoadStage(FabricLoadStage.PRELAUNCH);
+		Annotate.updateLoadStage(AnnotateLoadStage.PRELAUNCH);
 		MixinTarget.staticTwo("HELLO", 102809);
 	}
 
 	public void onPreInitialize() {
-		Annotate.updateLoadStage(FabricLoadStage.PREINIT);
+		Annotate.updateLoadStage(AnnotateLoadStage.PREINIT);
 	}
 
 	@Override
 	public void onInitialize() {
-		Annotate.updateLoadStage(FabricLoadStage.INIT);
+		Annotate.updateLoadStage(AnnotateLoadStage.INIT);
 	}
 
 	public void onPostInitialize() {
-		Annotate.updateLoadStage(FabricLoadStage.POSTINIT);
+		Annotate.updateLoadStage(AnnotateLoadStage.POSTINIT);
 	}
 }

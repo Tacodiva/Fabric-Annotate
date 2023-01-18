@@ -3,6 +3,7 @@ package sh.emberj.annotate.networking.serialization.serializers;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.networking.serialization.INetSerializer;
@@ -36,6 +37,11 @@ public class PrimitiveSerializer implements INetSerializer {
             buf.writeIdentifier((Identifier) object);
         else if (objectClass == NbtCompound.class)
             buf.writeNbt((NbtCompound) object);
+        else if (objectClass == PacketByteBuf.class) {
+            buf.writeVarInt(buf.capacity());
+            buf.writeBytes(buf);
+        } else if (objectClass == BlockPos.class)
+            buf.writeBlockPos((BlockPos) object);
         else
             return false;
         return true;
@@ -67,6 +73,10 @@ public class PrimitiveSerializer implements INetSerializer {
             return (T) buf.readIdentifier();
         else if (objectClass == NbtCompound.class)
             return (T) buf.readNbt();
+        else if (objectClass == PacketByteBuf.class)
+            return (T) buf.readBytes(buf.readVarInt());
+        else if (objectClass == BlockPos.class)
+            return (T) buf.readBlockPos();
         else
             return null;
     }

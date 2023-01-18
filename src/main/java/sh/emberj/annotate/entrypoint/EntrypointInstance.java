@@ -6,16 +6,16 @@ import org.objectweb.asm.Opcodes;
 
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotatedMethod;
-import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.ILoadListener;
 
 public class EntrypointInstance implements ILoadListener {
 
-    private final FabricLoadStage _STAGE;
+    private final AnnotateLoadStage _STAGE;
     private final AnnotatedMethod _METHOD;
     private final int _PRIORITY;
 
-    public EntrypointInstance(FabricLoadStage stage, int priority, AnnotatedMethod method) throws AnnotateException {
+    public EntrypointInstance(AnnotateLoadStage stage, int priority, AnnotatedMethod method) throws AnnotateException {
         _STAGE = stage;
         _METHOD = method;
         _PRIORITY = priority;
@@ -27,7 +27,7 @@ public class EntrypointInstance implements ILoadListener {
     }
 
     @Override
-    public FabricLoadStage getLoadStage() {
+    public AnnotateLoadStage getLoadStage() {
         return _STAGE;
     }
 

@@ -6,12 +6,12 @@ import sh.emberj.annotate.core.AnnotateMod;
 import sh.emberj.annotate.core.AnnotatedClass;
 import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.BaseAnnotation;
-import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.asm.AnnotationMetadata;
 import sh.emberj.annotate.core.asm.ClassMetadata;
 
 public class RegisterBaseAnnotation extends BaseAnnotation {
-    private final FabricLoadStage _STAGE;
+    private final AnnotateLoadStage _STAGE;
     private final String _REGISTRY;
     private final int _PRIORITY;
 
@@ -19,7 +19,7 @@ public class RegisterBaseAnnotation extends BaseAnnotation {
             throws AnnotateException {
         super(metadata, class_, mod);
         _REGISTRY = metadata.getStringParam("value");
-        _STAGE = metadata.getEnumParam("stage", FabricLoadStage.class, FabricLoadStage.PREINIT);
+        _STAGE = metadata.getEnumParam("stage", AnnotateLoadStage.class, AnnotateLoadStage.PREINIT);
         _PRIORITY = metadata.getIntParam("priority", 0);
     }
 

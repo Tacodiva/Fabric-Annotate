@@ -24,7 +24,7 @@ import net.fabricmc.loader.impl.launch.FabricLauncherBase;
 import net.fabricmc.loader.impl.launch.knot.Knot;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
-import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.entrypoint.Entrypoint;
 import sh.emberj.annotate.mixin.asm.DynamicMixinClass;
@@ -63,7 +63,7 @@ public class AnnotateMixins {
         return clazz;
     }
 
-    @Entrypoint(stage = FabricLoadStage.PRELAUNCH, priority = 4000)
+    @Entrypoint(stage = AnnotateLoadStage.PRELAUNCH, priority = 4000)
     public static void runMixins() throws AnnotateException {
         checkHaventRun();
         long startTime = System.currentTimeMillis();

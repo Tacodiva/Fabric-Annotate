@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.MetaMetaAnnotation;
 
 @MetaMetaAnnotation(RegisterMetaAnnotationType.class)
@@ -16,7 +16,7 @@ import sh.emberj.annotate.core.MetaMetaAnnotation;
 public @interface RegisterMetaAnnotation {
     public String value();
 
-    public FabricLoadStage stage() default FabricLoadStage.INIT;
+    public AnnotateLoadStage stage() default AnnotateLoadStage.INIT;
 
     public int priority() default 0;
 }

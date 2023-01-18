@@ -1,6 +1,6 @@
 package sh.emberj.annotate.core;
 
-public enum FabricLoadStage {
+public enum AnnotateLoadStage {
     PRELAUNCH,
     PREINIT,
     INIT,

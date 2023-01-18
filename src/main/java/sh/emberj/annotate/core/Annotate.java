@@ -14,10 +14,13 @@ import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.impl.util.version.StringVersion;
+import sh.emberj.annotate.core.asm.AnnotationContainer;
 import sh.emberj.annotate.core.asm.AnnotationMetadata;
 import sh.emberj.annotate.core.asm.ClassMetadata;
 import sh.emberj.annotate.core.asm.ClassMetadataFactory;
@@ -34,9 +37,9 @@ public class Annotate {
     private static final List<AnnotateMod> _MODS;
     private static final Map<String, IMetaAnnotationType> _META_ANNOTATIONS;
     private static final Map<String, BaseAnnotation> _BASE_ANNOTATIONS;
-    private static final Map<FabricLoadStage, List<ILoadListener>> _LOAD_LISTENERS;
+    private static final Map<AnnotateLoadStage, List<ILoadListener>> _LOAD_LISTENERS;
 
-    private static FabricLoadStage _loadStage;
+    private static AnnotateLoadStage _loadStage;
 
     static {
         _MODS = new ArrayList<>();
@@ -92,7 +95,11 @@ public class Annotate {
                 }
 
                 for (Pair<AnnotateMod, ClassMetadata> class_ : modClasses) {
+                    if (!checkEnvironment(class_.getRight()))
+                        continue;
                     for (MethodMetadata method : class_.getRight().getMethods()) {
+                        if (!checkEnvironment(method))
+                            continue;
                         AnnotatedMethod annotatedMethod = null;
                         for (AnnotationMetadata annotation : method.getAnnotations()) {
                             BaseAnnotation annotationType = _BASE_ANNOTATIONS
@@ -122,6 +129,14 @@ public class Annotate {
                 ae.showGUI();
             new AnnotateException("Error while initalizing Annotate.", e).showGUI();
         }
+    }
+
+    private static boolean checkEnvironment(AnnotationContainer container) throws AnnotateException {
+        AnnotationMetadata envAnnotation = container.getAnnotationByType(Environment.class);
+        if (envAnnotation == null)
+            return true;
+        EnvType env = envAnnotation.getEnumParam("value", EnvType.class);
+        return env == FabricLoader.getInstance().getEnvironmentType();
     }
 
     public static File getDirectory() {
@@ -157,7 +172,7 @@ public class Annotate {
 
     private static int listenerExecutionState = -1;
 
-    static void updateLoadStage(FabricLoadStage loadStage) {
+    static void updateLoadStage(AnnotateLoadStage loadStage) {
         try {
             int oldOrdinal = _loadStage == null ? -1 : _loadStage.ordinal();
             if (loadStage.ordinal() != oldOrdinal + 1)
@@ -181,19 +196,20 @@ public class Annotate {
         }
     }
 
-    public static FabricLoadStage getLoadStage() {
+    public static AnnotateLoadStage getLoadStage() {
         return _loadStage;
     }
 
     public static void addLoadListener(ILoadListener listener) {
-        final FabricLoadStage listenerStage = listener.getLoadStage();
+        final AnnotateLoadStage listenerStage = listener.getLoadStage();
         if (_loadStage != null && _loadStage.ordinal() > listener.getLoadStage().ordinal()
                 || (_loadStage == listener.getLoadStage() && listenerExecutionState == -1))
             throw new IllegalStateException("Cannot add listener on stage " + listenerStage
                     + " when already on load stage " + _loadStage + ".");
         List<ILoadListener> listeners = _LOAD_LISTENERS.computeIfAbsent(listenerStage, ls -> new ArrayList<>());
 
-        int index = Collections.binarySearch(listeners, listener, Comparator.comparing(ILoadListener::getPriority).reversed());
+        int index = Collections.binarySearch(listeners, listener,
+                Comparator.comparing(ILoadListener::getPriority).reversed());
         if (index < 0)
             index = -index - 1;
         else

@@ -8,7 +8,7 @@ import sh.emberj.annotate.core.AnnotateMod;
 import sh.emberj.annotate.core.AnnotatedClass;
 import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.BaseAnnotation;
-import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.ILoadListener;
 import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.core.asm.AnnotationMetadata;
@@ -19,7 +19,7 @@ public class HandledBaseAnnotation extends BaseAnnotation {
     private final ClassMetadata _CLASS;
     private final Type _HANDLER_TYPE;
     private final int _PRIORITY;
-    private final FabricLoadStage _LOAD_STAGE;
+    private final AnnotateLoadStage _LOAD_STAGE;
 
     private Object _handlerInstance;
 
@@ -29,7 +29,7 @@ public class HandledBaseAnnotation extends BaseAnnotation {
         _CLASS = class_;
         _HANDLER_TYPE = annotation.getClassParam("value");
         _PRIORITY = annotation.getIntParam("priority", 0);
-        _LOAD_STAGE = annotation.getEnumParam("stage", FabricLoadStage.class, FabricLoadStage.INIT);
+        _LOAD_STAGE = annotation.getEnumParam("stage", AnnotateLoadStage.class, AnnotateLoadStage.INIT);
     }
 
     public Object getHandler() throws AnnotateException {
@@ -65,7 +65,7 @@ public class HandledBaseAnnotation extends BaseAnnotation {
         }
 
         @Override
-        public FabricLoadStage getLoadStage() {
+        public AnnotateLoadStage getLoadStage() {
             return _LOAD_STAGE;
         }
     }

@@ -3,14 +3,19 @@ package sh.emberj.annotate.test;
 import java.util.function.BooleanSupplier;
 
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import io.netty.buffer.Unpooled;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.network.NetworkSide;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.Annotate;
-import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.entrypoint.Entrypoint;
 import sh.emberj.annotate.mixin.MixinMethodHead;
 import sh.emberj.annotate.mixin.MixinMethodTail;
@@ -18,6 +23,7 @@ import sh.emberj.annotate.networking.callback.ClientboundCallbackContext;
 import sh.emberj.annotate.networking.callback.NetCallback;
 import sh.emberj.annotate.networking.callback.NetworkCallbacks;
 import sh.emberj.annotate.networking.callback.ServerboundCallbackContext;
+import sh.emberj.annotate.networking.serialization.Nothing;
 
 // @AnnotateScan
 public class Test {
@@ -42,18 +48,21 @@ public class Test {
 
     @NetCallback(NetworkSide.CLIENTBOUND)
     public static void clientCallback(ClientboundCallbackContext ctx, String value) {
-        Annotate.LOG.info("Received on the client " + value);
-        NetworkCallbacks.execute(Test::serverCallback, "<3");
+        PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+        buf.writeString("<3");
+
+        NetworkCallbacks.execute(Test::serverCallback);
     }
 
     @NetCallback(NetworkSide.SERVERBOUND)
-    public static void serverCallback(ServerboundCallbackContext ctx, String message) {
-        Annotate.LOG.info("Received on the server " + message);
+    public static void serverCallback(ServerboundCallbackContext ctx, Nothing message) {
+        Annotate.LOG.info("Received " + message + " from " + ctx.getPlayer().getGameProfile().getName());
+        // Annotate.LOG.info("Received on the server " + message());
     }
 
     public static boolean done = false;
 
-    @MixinMethodHead(type = MinecraftServer.class)
+    @MixinMethodHead(value = MinecraftServer.class)
     public static void tick(MinecraftServer _this, BooleanSupplier shouldKeepTicking) {
         
         if (_this.getPlayerManager().getPlayerList().size() != 0) {
@@ -64,47 +73,48 @@ public class Test {
     }
 
     // @Translation(key = "singleplayer", value = "Yay!", type = "menu.", namespace = Translation.NO_NAMESPACE)
-    @Entrypoint(stage = FabricLoadStage.PRELAUNCH)
+    @Entrypoint(stage = AnnotateLoadStage.PRELAUNCH)
+    @Environment(EnvType.SERVER)
     public static void onInit0() {
         Annotate.LOG.info("On init 0!");
     }
 
-    @Entrypoint(stage = FabricLoadStage.PREINIT, priority = 1)
+    @Entrypoint(stage = AnnotateLoadStage.PREINIT, priority = 1)
     public static void onInit1() {
         Annotate.LOG.info("On init 1!");
     }
 
-    @Entrypoint(priority = 1)
+    @Entrypoint
     public static void onInit2() {
         Annotate.LOG.info("On init 2!");
     }
 
-    @Entrypoint(stage = FabricLoadStage.POSTINIT)
+    @Entrypoint(stage = AnnotateLoadStage.POSTINIT)
     public static void onInit3() {
         Annotate.LOG.info("On init 3!");
     }
 
-    @MixinMethodHead(type = MixinTarget.class)
+    @MixinMethodHead(MixinTarget.class)
     public static void staticOne() {
         Annotate.LOG.info("Static One Mixin!");
     }
 
-    @MixinMethodHead(type = MixinTarget.class)
+    @MixinMethodHead(MixinTarget.class)
     public static String staticTwo(String idk, int fbfb, CallbackInfo info) {
         Annotate.LOG.info("Static Two Mixin! Got idk = " + idk + " and fbfb = " + fbfb);
         return "cancelled!";
     }
 
-    @MixinMethodTail(type = MixinTarget.class)
-    public static double memberOne(MixinTarget _this, double abcde, CallbackInfo cbi, double returnVal) {
+    @MixinMethodTail(MixinTarget.class)
+    public static double memberOne(MixinTarget _this, double abcde, CallbackInfoReturnable<String> cbi, double returnVal) {
         Annotate.LOG.info("Member One Mixin! " + abcde);
         Annotate.LOG.info("State = " + _this.state);
         Annotate.LOG.info("State = " + cbi.getId());
-        Annotate.LOG.info("" + returnVal);
+        Annotate.LOG.info("" + returnVal);    
         return 1111;
     }
 
-    @MixinMethodHead(type = TitleScreen.class)
+    @MixinMethodHead(value = TitleScreen.class)
     public static void init() {
         System.out.println("==== TITLE SCREEN MIXIN ====");
         // System.exit(0);

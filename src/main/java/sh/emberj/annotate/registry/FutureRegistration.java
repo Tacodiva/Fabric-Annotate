@@ -4,18 +4,18 @@ import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotateIdentifier;
 import sh.emberj.annotate.core.AnnotatedClass;
-import sh.emberj.annotate.core.FabricLoadStage;
+import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.ILoadListener;
 
 public class FutureRegistration implements ILoadListener {
 
-    private final FabricLoadStage _STAGE;
+    private final AnnotateLoadStage _STAGE;
     private final int _PRIORITY;
     private final AnnotatedClass _CLASS;
     private final Identifier _ITEM_ID, _REGISTRY_ID;
 
     public FutureRegistration(AnnotatedClass class_, String registry, String path, String namespace,
-            FabricLoadStage stage, int priority) throws AnnotateException {
+            AnnotateLoadStage stage, int priority) throws AnnotateException {
         _STAGE = stage;
         _PRIORITY = priority;
         _CLASS = class_;
@@ -40,7 +40,7 @@ public class FutureRegistration implements ILoadListener {
     }
 
     @Override
-    public FabricLoadStage getLoadStage() {
+    public AnnotateLoadStage getLoadStage() {
         return _STAGE;
     }
 
