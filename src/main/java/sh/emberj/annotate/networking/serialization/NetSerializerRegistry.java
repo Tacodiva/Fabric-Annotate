@@ -19,7 +19,7 @@ import sh.emberj.annotate.registry.Register;
 import sh.emberj.annotate.registry.Registry;
 
 @Registry
-@Register(registry = ServerValidatorRegistry.ID)
+@Register(value = ServerValidatorRegistry.ID)
 public class NetSerializerRegistry extends FreezableRegistry<INetSerializer> implements IServerValidator {
 
     public static final String ID = "annotate:net_serializer";

@@ -12,7 +12,7 @@ import sh.emberj.annotate.registry.Register;
 import sh.emberj.annotate.registry.RegistryManager;
 import sh.emberj.annotate.registry.SimpleRegistry;
 
-@Register(registry = RegistryManager.ID, stage = AnnotateLoadStage.PRELAUNCH)
+@Register(value = RegistryManager.ID, stage = AnnotateLoadStage.PRELAUNCH)
 public class NetCallbackRegistry extends SimpleRegistry<NetCallbackInfo> {
 
     public static String ID = "annotate:net_callback";

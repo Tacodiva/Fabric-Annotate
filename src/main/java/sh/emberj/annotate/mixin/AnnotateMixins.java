@@ -27,8 +27,6 @@ import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.entrypoint.Entrypoint;
-import sh.emberj.annotate.mixin.asm.DynamicMixinClass;
-import sh.emberj.annotate.mixin.asm.IDynamicMixinMethodGenerator;
 
 public class AnnotateMixins {
     public static final Logger LOG = LoggerFactory.getLogger(AnnotateMixins.class);
@@ -63,7 +61,7 @@ public class AnnotateMixins {
         return clazz;
     }
 
-    @Entrypoint(stage = AnnotateLoadStage.PRELAUNCH, priority = 4000)
+    @Entrypoint(stage = AnnotateLoadStage.PRELAUNCH, priority = 3000)
     public static void runMixins() throws AnnotateException {
         checkHaventRun();
         long startTime = System.currentTimeMillis();

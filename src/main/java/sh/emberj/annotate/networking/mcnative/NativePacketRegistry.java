@@ -25,7 +25,7 @@ import sh.emberj.annotate.registry.Register;
 import sh.emberj.annotate.registry.Registry;
 
 @Registry
-@Register(registry = ServerValidatorRegistry.ID)
+@Register(value = ServerValidatorRegistry.ID)
 public class NativePacketRegistry extends FreezableRegistry<NativePacketType<?>> implements IServerValidator {
     public static final Logger LOG = LoggerFactory.getLogger("Annotate/NativePackets");
 

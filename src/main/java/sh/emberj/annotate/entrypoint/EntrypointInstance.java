@@ -43,6 +43,8 @@ public class EntrypointInstance implements ILoadListener {
         } catch (IllegalAccessException | IllegalArgumentException e) {
             throw new AnnotateException("Encountered an unexpected exception while invoking entrypoint.", e);
         } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof AnnotateException ae)
+                throw ae;
             throw new AnnotateException("Entrypoint threw an exception.", e.getCause());
         }
     }

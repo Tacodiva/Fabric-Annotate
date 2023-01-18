@@ -2,7 +2,6 @@ package sh.emberj.annotate.test;
 
 import java.util.function.BooleanSupplier;
 
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import io.netty.buffer.Unpooled;
@@ -14,11 +13,14 @@ import net.minecraft.network.PacketByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
+import sh.emberj.annotate.alloy.AlloyHead;
+import sh.emberj.annotate.alloy.AlloyTail;
+import sh.emberj.annotate.alloy.args.AlloyInfo;
+import sh.emberj.annotate.alloy.args.AlloyReturned;
+import sh.emberj.annotate.alloy.args.AlloyThis;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.entrypoint.Entrypoint;
-import sh.emberj.annotate.mixin.MixinMethodHead;
-import sh.emberj.annotate.mixin.MixinMethodTail;
 import sh.emberj.annotate.networking.callback.ClientboundCallbackContext;
 import sh.emberj.annotate.networking.callback.NetCallback;
 import sh.emberj.annotate.networking.callback.NetworkCallbacks;
@@ -62,8 +64,8 @@ public class Test {
 
     public static boolean done = false;
 
-    @MixinMethodHead(value = MinecraftServer.class)
-    public static void tick(MinecraftServer _this, BooleanSupplier shouldKeepTicking) {
+    @AlloyHead(MinecraftServer.class)
+    public static void tick(@AlloyThis MinecraftServer _this, BooleanSupplier shouldKeepTicking) {
         
         if (_this.getPlayerManager().getPlayerList().size() != 0) {
             done = true;
@@ -94,27 +96,26 @@ public class Test {
         Annotate.LOG.info("On init 3!");
     }
 
-    @MixinMethodHead(MixinTarget.class)
+    @AlloyHead(MixinTarget.class)
     public static void staticOne() {
         Annotate.LOG.info("Static One Mixin!");
     }
 
-    @MixinMethodHead(MixinTarget.class)
-    public static String staticTwo(String idk, int fbfb, CallbackInfo info) {
+    @AlloyHead(MixinTarget.class)
+    public static String staticTwo(String idk, int fbfb) {
         Annotate.LOG.info("Static Two Mixin! Got idk = " + idk + " and fbfb = " + fbfb);
         return "cancelled!";
     }
 
-    @MixinMethodTail(MixinTarget.class)
-    public static double memberOne(MixinTarget _this, double abcde, CallbackInfoReturnable<String> cbi, double returnVal) {
+    @AlloyTail(MixinTarget.class)
+    public static double memberOne(@AlloyThis MixinTarget _this, double abcde, @AlloyInfo CallbackInfoReturnable<Double> info, @AlloyReturned double oldReturn) { //CallbackInfo cbi, double returnVal
         Annotate.LOG.info("Member One Mixin! " + abcde);
         Annotate.LOG.info("State = " + _this.state);
-        Annotate.LOG.info("State = " + cbi.getId());
-        Annotate.LOG.info("" + returnVal);    
+        Annotate.LOG.info("Old Return = " + oldReturn);   
         return 1111;
     }
 
-    @MixinMethodHead(value = TitleScreen.class)
+    @AlloyHead(TitleScreen.class)
     public static void init() {
         System.out.println("==== TITLE SCREEN MIXIN ====");
         // System.exit(0);

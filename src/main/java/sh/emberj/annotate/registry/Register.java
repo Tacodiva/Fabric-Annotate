@@ -9,12 +9,12 @@ import java.lang.annotation.Target;
 import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.handled.HandleMetaAnnotation;
 
-@HandleMetaAnnotation(value = RegisterClassHandler.class, stage = AnnotateLoadStage.PRELAUNCH, priority = 90000)
+@HandleMetaAnnotation(value = RegisterClassHandler.class, stage = AnnotateLoadStage.PRELAUNCH, priority = 50000)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
 @Repeatable(RegisterContainer.class)
 public @interface Register {
-    public String registry();
+    public String value();
 
     public String path() default "";
 

@@ -75,8 +75,7 @@ public class AnnotateException extends Exception {
     }
 
     public AnnotateException(String cause, String member, Type clazz, ModContainer mod, Throwable e) {
-        super(e != null && e.getCause() instanceof AnnotateException aeCause ? aeCause.getMessage() : cause,
-                e != null && e.getCause() instanceof AnnotateException aeCause ? aeCause.getCause() : e);
+        super(cause, e);
         this._problemMember = member;
         this._problemClass = clazz;
         this._problemMod = mod;
@@ -172,7 +171,8 @@ public class AnnotateException extends Exception {
 
             if (_problemClass != null)
                 tabErr.addChild(
-                        "Culprit Class: " + _problemClass.getClassName()).iconType = FabricStatusTree.ICON_TYPE_JAVA_CLASS;
+                        "Culprit Class: "
+                                + _problemClass.getClassName()).iconType = FabricStatusTree.ICON_TYPE_JAVA_CLASS;
             if (_problemMember != null)
                 tabErr.addChild(
                         "Culprit Member: " + _problemMember).iconType = FabricStatusTree.ICON_TYPE_JAVA_CLASS;

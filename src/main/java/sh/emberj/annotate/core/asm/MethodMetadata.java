@@ -15,6 +15,7 @@ public class MethodMetadata extends AnnotationContainer {
     private Method _method;
     private Type _returnType;
     private Type[] _args;
+    private AnnotationContainer[] _argAnnotations;
 
     public MethodMetadata(ClassMetadata type, String name, String descriptor, int modifiers,
             String[] exceptions) {
@@ -38,6 +39,21 @@ public class MethodMetadata extends AnnotationContainer {
             throw new RuntimeException(e);
         }
         return _method;
+    }
+
+    public AnnotationContainer getArgAnnotations(int idx) {
+        if (_argAnnotations == null)
+            return null;
+        return _argAnnotations[idx];
+    }
+
+    void addArgumentAnnotation(int index, AnnotationMetadata annotation) {
+        if (_argAnnotations == null)
+            _argAnnotations = new AnnotationContainer[getArgNum()];
+        AnnotationContainer container = _argAnnotations[index];
+        if (container == null)
+            _argAnnotations[index] = container = new AnnotationContainer();
+        container.addAnnotation(annotation);
     }
 
     public ClassMetadata getDeclaringClass() {
@@ -82,12 +98,13 @@ public class MethodMetadata extends AnnotationContainer {
 
     @Override
     public String toString() {
+        return getReturnType().getClassName() + " " + toString(getName(), getArgTypes());
+    }
+
+    public static String toString(String name, Type[] argTypes) {
         StringBuilder sb = new StringBuilder();
-        sb.append(getReturnType().getClassName());
-        sb.append(" ");
-        sb.append(getName());
+        sb.append(name);
         sb.append("(");
-        Type[] argTypes = getArgTypes();
         if (argTypes.length != 0) {
             sb.append(argTypes[0].getClassName());
             for (int i = 1; i < argTypes.length; i++) {

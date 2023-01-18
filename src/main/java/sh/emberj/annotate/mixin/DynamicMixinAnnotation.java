@@ -1,4 +1,4 @@
-package sh.emberj.annotate.mixin.asm;
+package sh.emberj.annotate.mixin;
 
 import java.util.HashMap;
 import java.util.Map;

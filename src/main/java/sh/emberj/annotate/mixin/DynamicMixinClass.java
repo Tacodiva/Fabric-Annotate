@@ -1,4 +1,4 @@
-package sh.emberj.annotate.mixin.asm;
+package sh.emberj.annotate.mixin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +8,8 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.Mixin;
+
+import sh.emberj.annotate.core.AnnotateException;
 
 public class DynamicMixinClass implements Opcodes {
 
@@ -21,9 +23,10 @@ public class DynamicMixinClass implements Opcodes {
         _CLASS_NAME = className;
     }
 
-    public void addMethod(IDynamicMixinMethodGenerator methodGenerator) {
+    public void addMethod(IDynamicMixinMethodGenerator methodGenerator) throws AnnotateException {
         if (!methodGenerator.getTargetType().equals(_TARGET))
-            throw new IllegalArgumentException("methodGenerator must target the same type as the class it's being added to.");
+            throw new IllegalArgumentException(
+                    "methodGenerator must target the same type as the class it's being added to.");
         _METHODS.add(methodGenerator);
     }
 
@@ -35,13 +38,15 @@ public class DynamicMixinClass implements Opcodes {
         return _CLASS_NAME;
     }
 
-    public byte[] generateBytecode() {
+    public byte[] generateBytecode() throws AnnotateException {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
         {
             DynamicMixinAnnotation mixinAnnotation = new DynamicMixinAnnotation(Mixin.class, false);
             mixinAnnotation.setArrayParam("value", _TARGET);
-            mixinAnnotation.writeParams(cw.visitAnnotation(mixinAnnotation.getDescriptor(), mixinAnnotation.isVisible())).visitEnd();
+            mixinAnnotation
+                    .writeParams(cw.visitAnnotation(mixinAnnotation.getDescriptor(), mixinAnnotation.isVisible()))
+                    .visitEnd();
         }
 
         cw.visit(V1_1, ACC_PUBLIC | ACC_SUPER, _CLASS_NAME, null, "java/lang/Object", null);
@@ -61,10 +66,13 @@ public class DynamicMixinClass implements Opcodes {
 
         for (int i = 0; i < _METHODS.size(); i++) {
             final IDynamicMixinMethodGenerator method = _METHODS.get(i);
-            MethodVisitor mw = cw.visitMethod(method.generateMethodFlags(), method.getNamePrefix() + i, method.generateDescriptor(), null,
+            MethodVisitor mw = cw.visitMethod(method.generateMethodFlags(), method.getNamePrefix() + i,
+                    method.generateDescriptor(), null,
                     null);
             DynamicMixinAnnotation methodAnnotation = method.generateAnnotation();
-            methodAnnotation.writeParams(mw.visitAnnotation(methodAnnotation.getDescriptor(), methodAnnotation.isVisible())).visitEnd();
+            methodAnnotation
+                    .writeParams(mw.visitAnnotation(methodAnnotation.getDescriptor(), methodAnnotation.isVisible()))
+                    .visitEnd();
             method.generateMethod(mw);
             mw.visitEnd();
         }

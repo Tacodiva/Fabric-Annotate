@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.handled.HandleMetaAnnotation;
 
-@HandleMetaAnnotation(value = EntrypointMethodHandler.class, stage = AnnotateLoadStage.PRELAUNCH, priority = 100000)
+@HandleMetaAnnotation(value = EntrypointMethodHandler.class, stage = AnnotateLoadStage.PRELAUNCH, priority = 20000)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Entrypoint {

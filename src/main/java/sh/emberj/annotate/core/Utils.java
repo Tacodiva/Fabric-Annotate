@@ -55,8 +55,8 @@ public class Utils implements Opcodes {
         }
     }
 
-    public static void convertFromObject(MethodVisitor mw, Type type) {
-        PrimitiveTypeInfo info = getPrimitiveInfo(type);
+    public static void convertFromObject(MethodVisitor mw, Type primitiveType) {
+        PrimitiveTypeInfo info = getPrimitiveInfo(primitiveType);
         if (info != null) {
             mw.visitTypeInsn(CHECKCAST, info.objectType.getInternalName());
             mw.visitMethodInsn(INVOKEVIRTUAL, info.objectType.getInternalName(), info.valueMethod,
@@ -66,6 +66,10 @@ public class Utils implements Opcodes {
 
     public static boolean isPrimitive(Type type) {
         return getPrimitiveInfo(type) != null;
+    }
+
+    public static Type getPrimitiveObject(Type type) {
+        return getPrimitiveInfo(type).objectType;
     }
 
     public static int getVariableSize(Type type) {

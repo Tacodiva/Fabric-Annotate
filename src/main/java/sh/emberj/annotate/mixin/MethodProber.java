@@ -8,8 +8,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.asm.MethodMetadata;
-import sh.emberj.annotate.mixin.asm.DynamicMixinAnnotation;
-import sh.emberj.annotate.mixin.asm.IDynamicMixinMethodGenerator;
 
 public class MethodProber {
     private MethodProber() {
@@ -122,6 +120,6 @@ public class MethodProber {
         public Type getTargetType() {
             return _TARGET.getDeclaringClass().getType();
         }
-
+    
     }
 }

@@ -57,13 +57,10 @@ public class Annotate {
             {
                 List<Pair<AnnotateMod, ClassMetadata>> modClasses = new ArrayList<>();
 
-                {
-                    final ClassLoader classLoader = Annotate.class.getClassLoader();
-                    for (AnnotateMod mod : _MODS) {
-                        for (String package_ : mod.getPackages()) {
-                            for (ClassMetadata class_ : ClassMetadataFactory.createAll(package_, classLoader))
-                                modClasses.add(Pair.of(mod, class_));
-                        }
+                for (AnnotateMod mod : _MODS) {
+                    for (String package_ : mod.getPackages()) {
+                        for (ClassMetadata class_ : ClassMetadataFactory.createAll(package_))
+                            modClasses.add(Pair.of(mod, class_));
                     }
                 }
 
@@ -192,7 +189,8 @@ public class Annotate {
             if (e instanceof AnnotateException ae)
                 ae.showGUI();
             else
-                new AnnotateException("Unknown error while loading Annotate.", e).showGUI();
+            throw new RuntimeException(e);
+            //     new AnnotateException("Unknown error while loading Annotate.", e).showGUI();
         }
     }
 

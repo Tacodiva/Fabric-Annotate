@@ -2,7 +2,6 @@ package sh.emberj.annotate.core;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
-import sh.emberj.annotate.test.MixinTarget;
 
 public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 
@@ -11,7 +10,6 @@ public class AnnotateEntrypoint implements ModInitializer, PreLaunchEntrypoint {
 	@Override
 	public void onPreLaunch() {
 		Annotate.updateLoadStage(AnnotateLoadStage.PRELAUNCH);
-		MixinTarget.staticTwo("HELLO", 102809);
 	}
 
 	public void onPreInitialize() {

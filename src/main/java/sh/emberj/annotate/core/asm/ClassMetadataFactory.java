@@ -25,21 +25,36 @@ import sh.emberj.annotate.core.Utils;
 public class ClassMetadataFactory {
 
     private static Map<String, ClassMetadata> _CAHCE = new HashMap<>();
+    private static final ImmutableSet<ClassInfo> _ALL_CLASSES;
 
-    public static Set<ClassMetadata> createAll(String package_, ClassLoader classLoader) throws AnnotateException {
+    static {
         try {
-            Set<ClassMetadata> classes = new HashSet<>();
-            ImmutableSet<ClassInfo> packageContent = ClassPath.from(classLoader)
-                    .getTopLevelClassesRecursive(package_);
-
-            for (ClassInfo clazz : packageContent) {
-                classes.add(create(Type.getType(Utils.descriptorFromClassName(clazz.getName())), false));
-            }
-
-            return classes;
+            _ALL_CLASSES = ClassPath.from(ClassMetadataFactory.class.getClassLoader()).getAllClasses();
         } catch (IOException e) {
-            throw new AnnotateException("", e);
+            throw new RuntimeException(e);
         }
+    }
+
+    private static ImmutableSet<ClassInfo> getAllClassesRecursive(String packageName) {
+        String packagePrefix = packageName + '.';
+        ImmutableSet.Builder<ClassInfo> builder = ImmutableSet.builder();
+        for (ClassInfo classInfo : _ALL_CLASSES) {
+            if (classInfo.getName().startsWith(packagePrefix)) {
+                builder.add(classInfo);
+            }
+        }
+        return builder.build();
+    }
+
+    public static Set<ClassMetadata> createAll(String package_) throws AnnotateException {
+        Set<ClassMetadata> classes = new HashSet<>();
+        ImmutableSet<ClassInfo> packageContent = getAllClassesRecursive(package_);
+
+        for (ClassInfo clazz : packageContent) {
+            classes.add(create(Type.getType(Utils.descriptorFromClassName(clazz.getName())), false));
+        }
+
+        return classes;
     }
 
     public static int getCacheSize() {
@@ -127,6 +142,13 @@ public class ClassMetadataFactory {
             public AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
                 AnnotationMetadata annotation = new AnnotationMetadata(Type.getType(descriptor));
                 _TARGET.addAnnotation(annotation);
+                return new AnnotationMetadataVisitor(annotation);
+            }
+
+            @Override
+            public AnnotationVisitor visitParameterAnnotation(int parameter, String descriptor, boolean visible) {
+                AnnotationMetadata annotation = new AnnotationMetadata(Type.getType(descriptor));
+                _TARGET.addArgumentAnnotation(parameter, annotation);
                 return new AnnotationMetadataVisitor(annotation);
             }
         }

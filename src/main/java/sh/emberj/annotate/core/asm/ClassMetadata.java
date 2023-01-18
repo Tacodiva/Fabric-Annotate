@@ -51,6 +51,21 @@ public class ClassMetadata extends AnnotationContainer {
                 .findFirst().orElse(null);
     }
 
+    public MethodMetadata getMethod(String name, Type[] arguments) {
+        return _METHODS.stream().filter(target -> {
+            if (!target.getName().equals(name))
+                return false;
+            Type[] targetArgs = target.getArgTypes();
+            if (targetArgs.length != arguments.length)
+                return false;
+            for (int i = 0; i < targetArgs.length; i++) {
+                if (!arguments[i].equals(targetArgs[i]))
+                    return false;
+            }
+            return true;
+        }).findAny().orElse(null);
+    }
+
     public MethodMetadata getMethod(String name, String descriptor) {
         return _METHODS.stream()
                 .filter(method -> method.getName().equals(name) && method.getDescriptor().equals(descriptor)).findAny()

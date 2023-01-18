@@ -12,7 +12,7 @@ public class RegisterClassHandler implements IClassAnnotationHandler {
     public void handleClassAnnotation(AnnotatedClass class_, AnnotationMetadata annotation) throws AnnotateException {
         Annotate.addLoadListener(
                 new FutureRegistration(class_,
-                        annotation.getStringParam("registry"),
+                        annotation.getStringParam("value"),
                         annotation.getStringParam("path"),
                         annotation.getStringParam("namespace"),
                         annotation.getEnumParam("stage", AnnotateLoadStage.class, AnnotateLoadStage.PREINIT),
