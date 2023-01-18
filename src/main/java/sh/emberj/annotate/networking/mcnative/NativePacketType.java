@@ -18,12 +18,15 @@ public class NativePacketType<T extends PacketListener> implements IIdentifiable
 
     private final NetworkSide _SIDE;
 
+    private int _id;
+
     public NativePacketType(Identifier identifier, NetworkSide side, AnnotatedClass packetType,
             Class<? extends Packet<T>> packetClass) {
         _IDENTIFIER = identifier;
         _PACKET_CLASS = packetClass;
         _PACKET_TYPE = packetType;
         _SIDE = side;
+        _id = -1;
     }
 
     public boolean canHandle() {
@@ -47,6 +50,18 @@ public class NativePacketType<T extends PacketListener> implements IIdentifiable
     @Override
     public Identifier getIdentifier() {
         return _IDENTIFIER;
+    }
+
+    public int getID() {
+        if (_id == -1)
+            throw new IllegalStateException("A packet ID has not been assigned to " + getIdentifier() + " yet.");
+        return _id;
+    }
+
+    void assignID(int id) {
+        if (_id != -1)
+            throw new IllegalStateException("A packet ID has already been assigned.");
+        _id = id;
     }
 
 }

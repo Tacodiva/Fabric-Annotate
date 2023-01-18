@@ -23,7 +23,7 @@ import net.minecraft.network.packet.s2c.login.LoginSuccessS2CPacket;
 import net.minecraft.text.Text;
 import sh.emberj.annotate.networking.ServerValidatorRegistry;
 
-@Mixin(ClientLoginNetworkHandler.class)
+@Mixin(value = ClientLoginNetworkHandler.class, priority = 2000)
 public abstract class ClientLoginNetworkHandlerMixin {
 
     @Shadow
@@ -47,17 +47,28 @@ public abstract class ClientLoginNetworkHandlerMixin {
         if (packet.getChannel().equals(ServerValidatorRegistry.ANNOTATE_CHANNEL)) {
             info.cancel();
 
-            PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
-            buf.writeBoolean(true);
+            boolean validated = ServerValidatorRegistry.INSTANCE.verifyValidationPacket(packet.getPayload());
 
-            this.connection.send(new LoginQueryResponseC2SPacket(packet.getQueryId(), buf));
+            if (validated) {
+                ServerValidatorRegistry.LOG.info("Server validated.");
+                _hasReceivedInfo.set(true);
+                PacketByteBuf buf = new PacketByteBuf(Unpooled.buffer());
+                buf.writeBoolean(true);
+                this.connection.send(new LoginQueryResponseC2SPacket(packet.getQueryId(), buf));
+            } else {
+                ServerValidatorRegistry.LOG.error("Server not valid.");
+                this.connection.disconnect(
+                        Text.of("Annotate detected a desync with the server, probably caused by an incompatiable mod list or different mod versions."));
+                return;
+            }
+
         }
     }
 
-    @Inject(method = "onSuccess", at = @At("HEAD"))
+    @Inject(method = "onSuccess", at = @At("HEAD"), cancellable = true)
     public void onSuccess(LoginSuccessS2CPacket packet, CallbackInfo info) {
         if (!_hasReceivedInfo.get()) {
-            onDisconnected(Text.of("Cannot connect to server! Server not running the Annotate mod."));
+            this.connection.disconnect(Text.of("Cannot connect to server! Server not running the Annotate mod."));
             info.cancel();
         }
     }

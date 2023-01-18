@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
 import sh.emberj.annotate.core.FabricLoadStage;
 import sh.emberj.annotate.core.handled.HandleMetaAnnotation;
 
-@HandleMetaAnnotation(value = RegisterClassHandler.class, stage = FabricLoadStage.PRELAUNCH, priority = -90000)
+@HandleMetaAnnotation(value = RegisterClassHandler.class, stage = FabricLoadStage.PRELAUNCH, priority = 90000)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
 @Repeatable(RegisterContainer.class)

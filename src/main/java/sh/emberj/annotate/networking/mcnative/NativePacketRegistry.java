@@ -1,8 +1,12 @@
 package sh.emberj.annotate.networking.mcnative;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.network.NetworkSide;
@@ -23,6 +27,7 @@ import sh.emberj.annotate.registry.Registry;
 @Registry
 @Register(registry = ServerValidatorRegistry.ID)
 public class NativePacketRegistry extends FreezableRegistry<NativePacketType<?>> implements IServerValidator {
+    public static final Logger LOG = LoggerFactory.getLogger("Annotate/NativePackets");
 
     @Instance
     public static final NativePacketRegistry INSTANCE = new NativePacketRegistry();
@@ -65,6 +70,9 @@ public class NativePacketRegistry extends FreezableRegistry<NativePacketType<?>>
 
         freeze(clientboundHandler, _clientboundPackets);
         freeze(serverboundHandler, _serverboundPackets);
+
+        LOG.info("Injected " + _clientboundPackets.size() + " clientbound and " + _serverboundPackets.size()
+                + " serverbound packets.");
     }
 
     private <T extends PacketListener> void freeze(PacketHandler<T> handler, List<NativePacketType<T>> packets)
@@ -75,6 +83,7 @@ public class NativePacketRegistry extends FreezableRegistry<NativePacketType<?>>
             final NativePacketType<T> packet = packets.get(i);
             final int id = baseID + i;
             handler.packetIds.put(packet.getPacketClass(), id);
+            packet.assignID(id);
             try {
                 handler.packetFactories
                         .add(NetSerializeableSerializer.INSTANCE.getDeserializer(packet.getPacketClass()));
@@ -88,11 +97,41 @@ public class NativePacketRegistry extends FreezableRegistry<NativePacketType<?>>
     @Override
     public void writeValidationData(PacketByteBuf buf) {
         ensureFrozen();
+        writeValidationData(buf, _CLIENTBOUND_PACKET_MAP.values());
+        writeValidationData(buf, _SERVERBOUND_PACKET_MAP.values());
+    }
+
+    private <T extends PacketListener> void writeValidationData(PacketByteBuf buf,
+            Collection<NativePacketType<T>> packets) {
+        buf.writeVarInt(packets.size());
+        for (NativePacketType<?> packet : packets) {
+            buf.writeIdentifier(packet.getIdentifier());
+            buf.writeInt(packet.getID());
+        }
     }
 
     @Override
     public boolean validateData(PacketByteBuf buf) {
         ensureFrozen();
+        if (!validateData(buf, _CLIENTBOUND_PACKET_MAP))
+            return false;
+        if (!validateData(buf, _SERVERBOUND_PACKET_MAP))
+            return false;
+        return true;
+    }
+
+    private <T extends PacketListener> boolean validateData(PacketByteBuf buf,
+            Map<Identifier, NativePacketType<T>> packets) {
+        int size = buf.readVarInt();
+        if (size != packets.size())
+            return false;
+        for (int i = 0; i < size; i++) {
+            NativePacketType<T> packet = packets.get(buf.readIdentifier());
+            if (packet == null)
+                return false;
+            if (packet.getID() != buf.readInt())
+                return false;
+        }
         return true;
     }
 }

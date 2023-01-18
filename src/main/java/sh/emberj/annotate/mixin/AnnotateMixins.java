@@ -9,6 +9,8 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.objectweb.asm.Type;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.MixinEnvironment.Option;
 import org.spongepowered.asm.mixin.Mixins;
@@ -29,6 +31,7 @@ import sh.emberj.annotate.mixin.asm.DynamicMixinClass;
 import sh.emberj.annotate.mixin.asm.IDynamicMixinMethodGenerator;
 
 public class AnnotateMixins {
+    public static final Logger LOG = LoggerFactory.getLogger(AnnotateMixins.class);
 
     private AnnotateMixins() {
     }
@@ -60,7 +63,7 @@ public class AnnotateMixins {
         return clazz;
     }
 
-    @Entrypoint(stage = FabricLoadStage.PRELAUNCH, priority = -4000)
+    @Entrypoint(stage = FabricLoadStage.PRELAUNCH, priority = 4000)
     public static void runMixins() throws AnnotateException {
         checkHaventRun();
         long startTime = System.currentTimeMillis();
@@ -105,7 +108,7 @@ public class AnnotateMixins {
                 byte[] bytecode = clazz.generateBytecode();
                 String className = getSimpleClassName(clazz.getClassName());
                 Files.write(bytecode, new File(codePackage, className + ".class"));
-                Annotate.LOG.info("Codegen: Wrote " + className);
+                LOG.info("Codegen: Wrote " + className);
             }
         } catch (IOException e) {
             throw new AnnotateException("Error while writing generated files to disk.", e);
@@ -113,7 +116,7 @@ public class AnnotateMixins {
 
         Utils.injectClasspathFile(codegen);
 
-        Annotate.LOG.info("Codegen: Finished writing " + _classes.size() + " classes in "
+        LOG.info("Codegen: Finished writing " + _classes.size() + " classes in "
                 + (System.currentTimeMillis() - startTime) + " ms");
         _classes = null;
 

@@ -1,44 +1,57 @@
 package sh.emberj.annotate.networking.serialization;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.Instance;
-import sh.emberj.annotate.registry.GenericRegistry;
+import sh.emberj.annotate.networking.IServerValidator;
+import sh.emberj.annotate.networking.ServerValidatorRegistry;
+import sh.emberj.annotate.registry.FreezableRegistry;
+import sh.emberj.annotate.registry.Register;
 import sh.emberj.annotate.registry.Registry;
 
 @Registry
-public class NetSerializerRegistry extends GenericRegistry<INetSerializer> {
+@Register(registry = ServerValidatorRegistry.ID)
+public class NetSerializerRegistry extends FreezableRegistry<INetSerializer> implements IServerValidator {
 
     public static final String ID = "annotate:net_serializer";
     @Instance
     public static final NetSerializerRegistry INSTANCE = new NetSerializerRegistry();
 
-    private final SortedSet<INetSerializer> _REGISTRY;
+    private final List<INetSerializer> _REGISTRY;
 
     private final Map<Class<?>, INetSerializer> _TYPE_SERIALIZER_MAP;
     private final Map<Class<?>, INetSerializer> _TYPE_DESERIALIZER_MAP;
 
     private NetSerializerRegistry() {
         super(new Identifier(ID), INetSerializer.class);
-        _REGISTRY = new TreeSet<>((a, b) -> Integer.compare(b.getPriority(), a.getPriority()));
+        _REGISTRY = new ArrayList<>();
         _TYPE_SERIALIZER_MAP = new HashMap<>();
         _TYPE_DESERIALIZER_MAP = new HashMap<>();
     }
 
     @Override
-    public void register(Identifier key, INetSerializer value) throws AnnotateException {  
-        _REGISTRY.add(value);
+    public void register(Identifier key, INetSerializer value) throws AnnotateException {
+        ensureNotFrozen();
+        int index = Collections.binarySearch(_REGISTRY, value,
+                Comparator.comparing(INetSerializer::getPriority).reversed());
+        if (index < 0)
+            index = -index - 1;
+        _REGISTRY.add(index, value);
     }
 
     public void serialize(Object object, PacketByteBuf buf) throws AnnotateException {
-        if (object == null) throw new AnnotateException("Cannot serialize null.");
+        tryFreeze();
+        if (object == null)
+            throw new AnnotateException("Cannot serialize null.");
         final Class<?> objectClass = object.getClass();
 
         INetSerializer cachedSerializer = _TYPE_SERIALIZER_MAP.get(objectClass);
@@ -66,6 +79,7 @@ public class NetSerializerRegistry extends GenericRegistry<INetSerializer> {
     }
 
     public <T> T deserialize(Class<T> objectClass, PacketByteBuf buf) throws AnnotateException {
+        tryFreeze();
         INetSerializer cachedSerializer = _TYPE_DESERIALIZER_MAP.get(objectClass);
         T deserialized;
 
@@ -80,7 +94,7 @@ public class NetSerializerRegistry extends GenericRegistry<INetSerializer> {
         }
 
         for (INetSerializer serializer : _REGISTRY) {
-            if ((deserialized = cachedSerializer.tryDeserialize(objectClass, buf)) != null) {
+            if ((deserialized = serializer.tryDeserialize(objectClass, buf)) != null) {
                 if (serializer.shouldCache())
                     _TYPE_DESERIALIZER_MAP.put(objectClass, serializer);
                 return deserialized;
@@ -88,5 +102,24 @@ public class NetSerializerRegistry extends GenericRegistry<INetSerializer> {
         }
 
         throw new AnnotateException("No deserializer found for type " + objectClass + ".");
+    }
+
+    @Override
+    public void writeValidationData(PacketByteBuf buf) {
+        buf.writeVarInt(_REGISTRY.size());
+        for (INetSerializer serializer : _REGISTRY)
+            buf.writeIdentifier(serializer.getIdentifier());
+    }
+
+    @Override
+    public boolean validateData(PacketByteBuf buf) {
+        int size = buf.readVarInt();
+        if (size != _REGISTRY.size())
+            return false;
+        for (INetSerializer serializer : _REGISTRY) {
+            if (!serializer.getIdentifier().equals(buf.readIdentifier()))
+                return false;
+        }
+        return true;
     }
 }

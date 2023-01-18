@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.netty.buffer.Unpooled;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -11,7 +14,6 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.s2c.login.LoginQueryRequestS2CPacket;
 import net.minecraft.util.Identifier;
-import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.Instance;
 import sh.emberj.annotate.registry.FreezableRegistry;
@@ -19,6 +21,8 @@ import sh.emberj.annotate.registry.Registry;
 
 @Registry
 public class ServerValidatorRegistry extends FreezableRegistry<IServerValidator> {
+    public static final Logger LOG = LoggerFactory.getLogger("Annotate/ServerValidation");
+
     public static final Identifier ANNOTATE_CHANNEL = new Identifier("annotate", "main");
     public static final int ANNOTATE_QUERY_ID = 807380476;
     public static final byte VERSION_ID = 1;
@@ -66,7 +70,7 @@ public class ServerValidatorRegistry extends FreezableRegistry<IServerValidator>
         ensureFrozen();
 
         if (buf.readByte() != VERSION_ID) {
-            Annotate.LOG.error("Failed to validate server. Wrong version id.");
+            LOG.error("Failed to validate server. Wrong version id.");
             return false;
         }
 

@@ -9,12 +9,15 @@ import java.io.Serializable;
 import org.apache.commons.io.serialization.ValidatingObjectInputStream;
 
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.Identifier;
+import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.networking.serialization.INetSerializer;
 import sh.emberj.annotate.networking.serialization.NetSerializer;
 
 @NetSerializer
 public class SerializeableSerializer implements INetSerializer {
+    public static final Identifier ID = new Identifier(Annotate.ID, "serializeable_serializer");
 
     @Override
     public boolean trySerialize(Object object, Class<?> objectClass, PacketByteBuf buf) throws AnnotateException {
@@ -53,7 +56,11 @@ public class SerializeableSerializer implements INetSerializer {
 
     @Override
     public int getPriority() {
-        return 100;
+        return -1000;
     }
 
+    @Override
+    public Identifier getIdentifier() {
+        return ID;
+    }
 }

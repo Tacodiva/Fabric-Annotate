@@ -47,7 +47,7 @@ public class NetCallbackPacketC2S implements INativeServerboundPacket {
     }
 
     private void runCallback(ServerPlayNetworkHandler ctx) {
-        info.invoke(ctx, parameter);
+        info.invoke(new ServerboundCallbackContext(ctx), parameter);
     }
     
 }

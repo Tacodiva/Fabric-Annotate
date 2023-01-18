@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.network.NetworkSide;
-import net.minecraft.server.integrated.IntegratedServer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.core.Annotate;
@@ -17,6 +17,7 @@ import sh.emberj.annotate.mixin.MixinMethodTail;
 import sh.emberj.annotate.networking.callback.ClientboundCallbackContext;
 import sh.emberj.annotate.networking.callback.NetCallback;
 import sh.emberj.annotate.networking.callback.NetworkCallbacks;
+import sh.emberj.annotate.networking.callback.ServerboundCallbackContext;
 
 // @AnnotateScan
 public class Test {
@@ -42,13 +43,21 @@ public class Test {
     @NetCallback(NetworkSide.CLIENTBOUND)
     public static void clientCallback(ClientboundCallbackContext ctx, String value) {
         Annotate.LOG.info("Received on the client " + value);
+        NetworkCallbacks.execute(Test::serverCallback, "<3");
     }
-    
 
-    @MixinMethodHead(type = IntegratedServer.class)
-    public static void tick(IntegratedServer _this, BooleanSupplier shouldKeepTicking) {
+    @NetCallback(NetworkSide.SERVERBOUND)
+    public static void serverCallback(ServerboundCallbackContext ctx, String message) {
+        Annotate.LOG.info("Received on the server " + message);
+    }
+
+    public static boolean done = false;
+
+    @MixinMethodHead(type = MinecraftServer.class)
+    public static void tick(MinecraftServer _this, BooleanSupplier shouldKeepTicking) {
         
         if (_this.getPlayerManager().getPlayerList().size() != 0) {
+            done = true;
             ServerPlayerEntity spe = _this.getPlayerManager().getPlayerList().get(0);
             NetworkCallbacks.execute(spe, Test::clientCallback, "Hello, world!");
         }
@@ -60,12 +69,12 @@ public class Test {
         Annotate.LOG.info("On init 0!");
     }
 
-    @Entrypoint(stage = FabricLoadStage.PREINIT, priority = -1)
+    @Entrypoint(stage = FabricLoadStage.PREINIT, priority = 1)
     public static void onInit1() {
         Annotate.LOG.info("On init 1!");
     }
 
-    @Entrypoint(priority = -1)
+    @Entrypoint(priority = 1)
     public static void onInit2() {
         Annotate.LOG.info("On init 2!");
     }

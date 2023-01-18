@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.Identifier;
+import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.Instance;
 import sh.emberj.annotate.networking.serialization.INetSerializeable;
@@ -19,6 +21,8 @@ import sh.emberj.annotate.networking.serialization.NetSerializer;
 
 @NetSerializer
 public class NetSerializeableSerializer implements INetSerializer {
+
+    public static final Identifier ID = new Identifier(Annotate.ID, "net_serializeable_serializer");
 
     @Instance
     public static final NetSerializeableSerializer INSTANCE = new NetSerializeableSerializer();
@@ -82,6 +86,11 @@ public class NetSerializeableSerializer implements INetSerializer {
 
         _DESERIALIZER_CACHE.put(clazz, deserializer);
         return (Function<PacketByteBuf, T>) deserializer;
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return ID;
     }
 
 }

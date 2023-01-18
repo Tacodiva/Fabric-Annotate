@@ -1,13 +1,16 @@
 package sh.emberj.annotate.networking.serialization.serializers;
 
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
+import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.networking.serialization.INetSerializer;
 import sh.emberj.annotate.networking.serialization.NetSerializer;
 
 @NetSerializer
-public class PrimitiveNetSerializer implements INetSerializer {
+public class PrimitiveSerializer implements INetSerializer {
+    public static final Identifier ID = new Identifier(Annotate.ID, "primitive_serializer");
 
     @Override
     public boolean trySerialize(Object object, Class<?> objectClass, PacketByteBuf buf) throws AnnotateException {
@@ -31,6 +34,8 @@ public class PrimitiveNetSerializer implements INetSerializer {
             buf.writeString((String) object);
         else if (objectClass == Identifier.class)
             buf.writeIdentifier((Identifier) object);
+        else if (objectClass == NbtCompound.class)
+            buf.writeNbt((NbtCompound) object);
         else
             return false;
         return true;
@@ -60,7 +65,20 @@ public class PrimitiveNetSerializer implements INetSerializer {
             return (T) buf.readString();
         else if (objectClass == Identifier.class)
             return (T) buf.readIdentifier();
+        else if (objectClass == NbtCompound.class)
+            return (T) buf.readNbt();
         else
             return null;
     }
+
+    @Override
+    public int getPriority() {
+        return 1000;
+    }
+
+    @Override
+    public Identifier getIdentifier() {
+        return ID;
+    }
+
 }

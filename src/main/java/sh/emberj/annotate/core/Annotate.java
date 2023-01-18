@@ -28,7 +28,7 @@ public class Annotate {
     private Annotate() {
     }
 
-    public static final Logger LOG = LoggerFactory.getLogger(Annotate.class);
+    public static final Logger LOG = LoggerFactory.getLogger("Annotate");
     public static final String ID = "annotate";
 
     private static final List<AnnotateMod> _MODS;
@@ -193,13 +193,13 @@ public class Annotate {
                     + " when already on load stage " + _loadStage + ".");
         List<ILoadListener> listeners = _LOAD_LISTENERS.computeIfAbsent(listenerStage, ls -> new ArrayList<>());
 
-        int index = Collections.binarySearch(listeners, listener, Comparator.comparing(ILoadListener::getPriority));
+        int index = Collections.binarySearch(listeners, listener, Comparator.comparing(ILoadListener::getPriority).reversed());
         if (index < 0)
             index = -index - 1;
         else
             ++index;
         if (listenerStage == _loadStage && listenerExecutionState != -1 && index < listenerExecutionState)
-            throw new IllegalStateException("Listener priority too low to be inserted. It should have already run.");
+            throw new IllegalStateException("Listener priority too high to be inserted. It should have already run.");
         listeners.add(index, listener);
     }
 }

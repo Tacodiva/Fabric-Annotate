@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import sh.emberj.annotate.core.FabricLoadStage;
 
-@RegisterMetaAnnotation(value = RegistryManager.ID, stage = FabricLoadStage.PREINIT, priority = -500)
+@RegisterMetaAnnotation(value = RegistryManager.ID, stage = FabricLoadStage.PREINIT, priority = 500)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
 public @interface Registry {

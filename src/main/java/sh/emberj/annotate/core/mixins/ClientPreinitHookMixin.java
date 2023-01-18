@@ -12,7 +12,7 @@ import sh.emberj.annotate.core.AnnotateEntrypoint;
 
 @Mixin(MinecraftClient.class)
 public class ClientPreinitHookMixin {
-    @Redirect(method = "<init>(Lnet/minecraft/client/RunArgs;)V", at = @At(value = "INVOKE", target = "Lnet/fabricmc/loader/impl/game/minecraft/Hooks;startClient(Ljava/io/File;Ljava/lang/Object;)V"))
+    @Redirect(method = "<init>(Lnet/minecraft/client/RunArgs;)V", at = @At(value = "INVOKE", target = "Lnet/fabricmc/loader/impl/game/minecraft/Hooks;startClient(Ljava/io/File;Ljava/lang/Object;)V", remap = false))
     private void startClient(File runDir, Object gameInstance) {
         AnnotateEntrypoint entrypoints = AnnotateEntrypoint.INSTANCE;
         entrypoints.onPreInitialize();

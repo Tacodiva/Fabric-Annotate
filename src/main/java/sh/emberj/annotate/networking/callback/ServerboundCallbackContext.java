@@ -1,16 +1,17 @@
 package sh.emberj.annotate.networking.callback;
 
+import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 public class ServerboundCallbackContext {
         
-    private final ServerboundCallbackContext _HANDLER;
+    private final ServerPlayNetworkHandler _HANDLER;
 
-    ServerboundCallbackContext(ServerboundCallbackContext handler) {
+    ServerboundCallbackContext(ServerPlayNetworkHandler handler) {
         _HANDLER = handler;
     }
 
-    public ServerboundCallbackContext getNetworkHandler() {
+    public ServerPlayNetworkHandler getNetworkHandler() {
         return _HANDLER;
     }
 

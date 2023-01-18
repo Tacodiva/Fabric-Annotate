@@ -3,6 +3,7 @@ package sh.emberj.annotate.networking.callback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.network.ClientConnection;
 
 public class ClientboundCallbackContext {
     
@@ -22,5 +23,9 @@ public class ClientboundCallbackContext {
 
     public MinecraftClient getClient() {
         return MinecraftClient.getInstance();
+    }
+
+    public ClientConnection getConnection() {
+        return _HANDLER.getConnection();
     }
 }

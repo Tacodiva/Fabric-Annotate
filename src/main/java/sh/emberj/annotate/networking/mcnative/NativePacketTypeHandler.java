@@ -33,6 +33,8 @@ public class NativePacketTypeHandler implements IClassAnnotationHandler {
             NativePacketRegistry.INSTANCE.register(id,
                     new NativePacketType<>(id, NetworkSide.SERVERBOUND, class_, (Class<? extends INativeServerboundPacket>) class_.getMetadata().getAsClass()));
         }
+
+        NativePacketRegistry.LOG.info("Registered native packet '" + id + "'.");
     }
 
 }

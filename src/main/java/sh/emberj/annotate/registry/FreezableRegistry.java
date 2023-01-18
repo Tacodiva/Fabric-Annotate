@@ -28,4 +28,8 @@ public abstract class FreezableRegistry<T> extends GenericRegistry<T> {
         ensureNotFrozen();
         _frozen = true;
     }
+
+    protected void tryFreeze() {
+        _frozen = true;
+    }
 }

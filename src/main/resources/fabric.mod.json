@@ -6,7 +6,7 @@
   "version": "${version}",
   
   
-  "description": "A standalone library which takes advantage of Java's annotations to speed up mod development.",
+  "description": "A standalone library which takes advantage of reflection to speed up mod development.",
   "authors": [
     "Tacodiva"
   ],
@@ -29,7 +29,7 @@
 
   "depends": {
     "fabricloader": ">=0.14.9",
-    "minecraft": "~1.19",
+    "minecraft": "1.19.2",
     "java": ">=17"
   },
 
