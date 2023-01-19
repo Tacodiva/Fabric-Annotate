@@ -14,7 +14,7 @@ import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.core.asm.AnnotationMetadata;
 import sh.emberj.annotate.core.asm.ClassMetadata;
 
-public class HandledBaseAnnotation extends BaseAnnotation {
+public class HandledAnnotation extends BaseAnnotation {
 
     private final ClassMetadata _CLASS;
     private final Type _HANDLER_TYPE;
@@ -23,9 +23,9 @@ public class HandledBaseAnnotation extends BaseAnnotation {
 
     private Object _handlerInstance;
 
-    public HandledBaseAnnotation(AnnotationMetadata annotation, ClassMetadata class_,
+    public HandledAnnotation(AnnotationMetadata annotation, ClassMetadata class_,
             AnnotateMod mod) throws AnnotateException {
-        super(annotation, class_, mod);
+        super(class_, mod);
         _CLASS = class_;
         _HANDLER_TYPE = annotation.getClassParam("value");
         _PRIORITY = annotation.getIntParam("priority", 0);

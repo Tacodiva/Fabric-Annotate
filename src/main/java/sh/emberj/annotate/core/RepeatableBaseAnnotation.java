@@ -8,9 +8,8 @@ class RepeatableBaseAnnotation extends BaseAnnotation {
 
     private final BaseAnnotation _SINGLE_TYPE;
 
-    public RepeatableBaseAnnotation(AnnotationMetadata metadata, ClassMetadata class_, AnnotateMod mod,
-            BaseAnnotation singleType) {
-        super(metadata, class_, mod);
+    public RepeatableBaseAnnotation(ClassMetadata class_, AnnotateMod mod, BaseAnnotation singleType) {
+        super(class_, mod);
         _SINGLE_TYPE = singleType;
     }
 

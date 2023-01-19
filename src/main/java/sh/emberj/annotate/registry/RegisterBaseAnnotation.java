@@ -17,7 +17,7 @@ public class RegisterBaseAnnotation extends BaseAnnotation {
 
     public RegisterBaseAnnotation(AnnotationMetadata metadata, ClassMetadata class_, AnnotateMod mod)
             throws AnnotateException {
-        super(metadata, class_, mod);
+        super(class_, mod);
         _REGISTRY = metadata.getStringParam("value");
         _STAGE = metadata.getEnumParam("stage", AnnotateLoadStage.class, AnnotateLoadStage.PREINIT);
         _PRIORITY = metadata.getIntParam("priority", 0);

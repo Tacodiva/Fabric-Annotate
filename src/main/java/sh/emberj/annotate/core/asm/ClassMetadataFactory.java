@@ -165,7 +165,7 @@ public class ClassMetadataFactory {
             @Override
             public void visitLocalVariable(String name, String descriptor,
                     String signature, Label start, Label end, int index) {
-                System.out.println("LOCAL " + index + " -> " + name + " " + descriptor + " RANGE " + start + " - " + end);
+                // System.out.println("LOCAL " + index + " -> " + name + " " + descriptor + " RANGE " + start + " - " + end);
             }
         }
 

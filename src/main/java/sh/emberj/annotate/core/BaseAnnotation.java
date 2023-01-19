@@ -8,14 +8,12 @@ import sh.emberj.annotate.core.asm.ClassMetadataFactory;
 
 public abstract class BaseAnnotation {
 
-    private final AnnotationMetadata _METADATA;
     private final AnnotateMod _MOD;
-    private final ClassMetadata _CLASS;
+    private final ClassMetadata _ANNOTATION;
 
-    public BaseAnnotation(AnnotationMetadata metadata, ClassMetadata class_, AnnotateMod mod) {
-        _METADATA = metadata;
+    public BaseAnnotation(ClassMetadata annotation, AnnotateMod mod) {
         _MOD = mod;
-        _CLASS = class_;
+        _ANNOTATION = annotation;
     }
 
     public abstract void handleInstance(AnnotationMetadata instance, AnnotatedClass annotatedClass)
@@ -24,16 +22,16 @@ public abstract class BaseAnnotation {
     public abstract void handleInstance(AnnotationMetadata instance, AnnotatedMethod annotatedMethod)
             throws AnnotateException;
 
-    public AnnotationMetadata getMetadata() {
-        return _METADATA;
-    }
-
     public AnnotateMod getMod() {
         return _MOD;
     }
 
+    public ClassMetadata getAnnotation() {
+        return _ANNOTATION;
+    }
+
     public ClassMetadata getRepeatableContainer() throws AnnotateException {
-        AnnotationMetadata repeatable = _CLASS.getAnnotationByType(Repeatable.class);
+        AnnotationMetadata repeatable = _ANNOTATION.getAnnotationByType(Repeatable.class);
         if (repeatable == null) return null;
         return ClassMetadataFactory.create(repeatable.getClassParam("value"));
     }

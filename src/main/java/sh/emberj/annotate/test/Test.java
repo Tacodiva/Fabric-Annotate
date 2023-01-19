@@ -1,19 +1,10 @@
 package sh.emberj.annotate.test;
 
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
 import io.netty.buffer.Unpooled;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.alloy.AlloyHead;
-import sh.emberj.annotate.alloy.AlloyTail;
-import sh.emberj.annotate.alloy.args.AlloyInfo;
-import sh.emberj.annotate.alloy.args.AlloyReturned;
-import sh.emberj.annotate.alloy.args.AlloyThis;
 import sh.emberj.annotate.core.Annotate;
 import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.entrypoint.Entrypoint;
@@ -92,16 +83,18 @@ public class Test {
         Annotate.LOG.info("On init 3!");
     }
 
-    @AlloyTail(MixinTarget.class)
-    public static void staticOne() {
-        Annotate.LOG.info("Static One Mixin!");
-    }
+    // @AlloyTail(MixinTarget.class)
+    // public static void staticOne() {
+    //     Annotate.LOG.info("Static One Mixin! ");
+    //     // Annotate.LOG.info(info.getId());
 
-    // @AlloyHead(value = MixinTarget.class, cancellable = true)
-    // public static String staticTwo(String idk, int fbfb) {
-    //     Annotate.LOG.info("Static Two Mixin! Got idk = " + idk + " and fbfb = " + fbfb);
-    //     return "cancelled!";
     // }
+
+    @AlloyHead(value = MixinTarget.class, cancellable = true)
+    public static void staticTwo(String idk, int fbfb) {
+        Annotate.LOG.info("Static Two Mixin! Got idk = " + idk + " and fbfb = " + fbfb);
+        // return "cancelled!";
+    }
 
     // @AlloyTail(MixinTarget.class)
     // public static double memberOne(@AlloyThis MixinTarget _this, double abcde, @AlloyInfo CallbackInfoReturnable<Double> info, @AlloyReturned double oldReturn) { //CallbackInfo cbi, double returnVal

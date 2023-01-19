@@ -36,16 +36,40 @@ public class Annotate {
 
     private static final List<AnnotateMod> _MODS;
     private static final Map<String, IMetaAnnotationType> _META_ANNOTATIONS;
-    private static final Map<String, BaseAnnotation> _BASE_ANNOTATIONS;
+    private static final Map<String, BaseAnnotation> _ANNOTATIONS;
     private static final Map<AnnotateLoadStage, List<ILoadListener>> _LOAD_LISTENERS;
 
     private static AnnotateLoadStage _loadStage;
 
+    private static boolean _canAddMetaAnnotations;
+    private static boolean _canAddAnnotations;
+
+    public static void addMetaAnnotation(IMetaAnnotationType info) throws AnnotateException {
+        if (!_canAddMetaAnnotations)
+            throw new IllegalStateException(
+                    "Too late to add meta annotation. Only types annotated with @AnnotationFactory should add meta annotations.");
+        _META_ANNOTATIONS.put(Type.getType(info.getAnnotation()).toString(), info);
+    }
+
+    public static void addAnnotation(BaseAnnotation annotation) throws AnnotateException {
+        if (!_canAddAnnotations)
+            throw new IllegalStateException(
+                    "Too late to add annotation. Can only add annotations before meta annotations are finished.");
+        _ANNOTATIONS.put(annotation.getAnnotation().getType().toString(), annotation);
+        ClassMetadata repeatableContainer = annotation.getRepeatableContainer();
+        if (repeatableContainer != null)
+            _ANNOTATIONS.put(repeatableContainer.toString(),
+                    new RepeatableBaseAnnotation(repeatableContainer, annotation.getMod(), annotation));
+
+    }
+
     static {
         _MODS = new ArrayList<>();
         _META_ANNOTATIONS = new HashMap<>();
-        _BASE_ANNOTATIONS = new HashMap<>();
+        _ANNOTATIONS = new HashMap<>();
         _LOAD_LISTENERS = new HashMap<>();
+        _canAddAnnotations = true;
+        _canAddMetaAnnotations = true;
         try {
 
             for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
@@ -65,31 +89,32 @@ public class Annotate {
                 }
 
                 for (Pair<AnnotateMod, ClassMetadata> class_ : modClasses) {
-                    AnnotationMetadata metaMetaAnnotationInstance = class_.getRight()
-                            .getAnnotationByType(MetaMetaAnnotation.class);
-                    if (metaMetaAnnotationInstance == null)
+                    AnnotationMetadata factoryMeta = class_.getRight()
+                            .getAnnotationByType(AnnotationFactory.class);
+                    if (factoryMeta == null)
                         continue;
-                    Type metaAnnotationTypeClass = metaMetaAnnotationInstance.getClassParam("value");
-                    IMetaAnnotationType metaAnnotationType = (IMetaAnnotationType) Utils
-                            .instantiate(metaAnnotationTypeClass);
-                    _META_ANNOTATIONS.put(class_.getRight().toString(), metaAnnotationType);
+                    Class<?> factoryClass = class_.getRight().getAsClass();
+                    if (!IAnnotationFactory.class.isAssignableFrom(factoryClass))
+                        throw new AnnotateException(
+                                "Types annotated with @AnnotationFactory must implement IAnnotationFactory.");
+                    IAnnotationFactory metaAnnotationType = (IAnnotationFactory) Utils
+                            .instantiate(factoryClass);
+                    metaAnnotationType.run();
                 }
+
+                _canAddMetaAnnotations = false;
 
                 for (Pair<AnnotateMod, ClassMetadata> class_ : modClasses) {
                     for (AnnotationMetadata annotation : class_.getRight().getAnnotations()) {
                         IMetaAnnotationType metaAnnotation = _META_ANNOTATIONS.get(annotation.getType().toString());
                         if (metaAnnotation == null)
                             continue;
-                        BaseAnnotation base = metaAnnotation.createBaseAnnotation(annotation, class_.getRight(),
-                                class_.getLeft());
-                        _BASE_ANNOTATIONS.put(class_.getRight().toString(), base);
-                        ClassMetadata repeatableContainer = base.getRepeatableContainer();
-                        if (repeatableContainer != null)
-                            _BASE_ANNOTATIONS.put(repeatableContainer.toString(),
-                                    new RepeatableBaseAnnotation(annotation, repeatableContainer, class_.getLeft(),
-                                            base));
+                        addAnnotation(metaAnnotation.createBaseAnnotation(annotation, class_.getRight(),
+                                class_.getLeft()));
                     }
                 }
+
+                _canAddAnnotations = false;
 
                 for (Pair<AnnotateMod, ClassMetadata> class_ : modClasses) {
                     if (!checkEnvironment(class_.getRight()))
@@ -99,7 +124,7 @@ public class Annotate {
                             continue;
                         AnnotatedMethod annotatedMethod = null;
                         for (AnnotationMetadata annotation : method.getAnnotations()) {
-                            BaseAnnotation annotationType = _BASE_ANNOTATIONS
+                            BaseAnnotation annotationType = _ANNOTATIONS
                                     .get(annotation.getType().toString());
                             if (annotationType == null)
                                 continue;
@@ -111,7 +136,7 @@ public class Annotate {
 
                     AnnotatedClass annotatedClass = null;
                     for (AnnotationMetadata annotation : class_.getRight().getAnnotations()) {
-                        BaseAnnotation annotationType = _BASE_ANNOTATIONS
+                        BaseAnnotation annotationType = _ANNOTATIONS
                                 .get(annotation.getType().toString());
                         if (annotationType == null)
                             continue;
@@ -215,5 +240,9 @@ public class Annotate {
         if (listenerStage == _loadStage && listenerExecutionState != -1 && index < listenerExecutionState)
             throw new IllegalStateException("Listener priority too high to be inserted. It should have already run.");
         listeners.add(index, listener);
+    }
+
+    public static AnnotateMod getMod(String id) {
+        return _MODS.stream().filter(mod -> mod.getID().equals(ID)).findAny().orElse(null);
     }
 }

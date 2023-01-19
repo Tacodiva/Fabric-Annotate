@@ -98,9 +98,6 @@ public interface IAlloyMethodType {
             throw new AnnotateException("Cannot find target method in target type " + targetClass + ". Expected "
                     + MethodMetadata.toString(targetName, targetArgs), method);
 
-        System.out.println(target.getDeclaringClass());
-        System.out.println(target);
-
         AnnotateMixins.addMixin(type.createDynamicMixin(alloyAnnotation, method, alloyArgs, target));
     }
 }

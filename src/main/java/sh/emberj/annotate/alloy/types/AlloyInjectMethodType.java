@@ -5,14 +5,13 @@ import java.lang.reflect.Modifier;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import sh.emberj.annotate.alloy.AlloyArgument;
 import sh.emberj.annotate.alloy.IAlloyMethod;
 import sh.emberj.annotate.alloy.IAlloyMethodType;
+import sh.emberj.annotate.alloy.mixinext.AlloyInject;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.Utils;
@@ -37,7 +36,7 @@ public class AlloyInjectMethodType implements IAlloyMethodType {
     }
 
     protected AnnotationMetadata generateAnnotation(AlloyInjectMethod method) {
-        MutableAnnotationMetadata inject = new MutableAnnotationMetadata(Inject.class);
+        MutableAnnotationMetadata inject = new MutableAnnotationMetadata(AlloyInject.class);
         MutableAnnotationArrayMetadata atArr = new MutableAnnotationArrayMetadata();
         MutableAnnotationMetadata at = new MutableAnnotationMetadata(At.class);
         at.setStringParam("value", POSITION);
@@ -46,26 +45,26 @@ public class AlloyInjectMethodType implements IAlloyMethodType {
         MutableAnnotationArrayMetadata methodArr = new MutableAnnotationArrayMetadata();
         methodArr.addString(method.TARGET.getName() + method.TARGET.getDescriptor());
         inject.setArrayParam("method", methodArr);
-        Boolean cancellable = method.ALLOY_ANNOTATION.getBooleanParam("cancellable");
-        if (cancellable == null) {
-            if (method.HAS_RETURN) {
-                cancellable = true;
-            } else {
-                for (int i = 0; i < method.METHOD_ARGS.length; i++) {
-                    AlloyArgument arg = method.METHOD_ARGS[i];
-                    if (arg.alloyType() == null)
-                        continue;
-                    if (arg.alloyType().requireCancellable(arg)) {
-                        cancellable = true;
-                        break;
-                    }
-                }
-                if (cancellable == null)
-                    cancellable = false;
-            }
-        }
-        inject.setBooleanParam("cancellable", cancellable);
-        inject.setEnumParam("locals", LocalCapture.PRINT);
+        // Boolean cancellable = method.ALLOY_ANNOTATION.getBooleanParam("cancellable");
+        // if (cancellable == null) {
+        //     if (method.HAS_RETURN) {
+        //         cancellable = true;
+        //     } else {
+        //         for (int i = 0; i < method.METHOD_ARGS.length; i++) {
+        //             AlloyArgument arg = method.METHOD_ARGS[i];
+        //             if (arg.alloyType() == null)
+        //                 continue;
+        //             if (arg.alloyType().requireCancellable(arg)) {
+        //                 cancellable = true;
+        //                 break;
+        //             }
+        //         }
+        //         if (cancellable == null)
+        //             cancellable = false;
+        //     }
+        // }
+        // inject.setBooleanParam("cancellable", cancellable);
+        // inject.setEnumParam("locals", LocalCapture.PRINT);
         return inject;
     }
 
@@ -166,8 +165,6 @@ public class AlloyInjectMethodType implements IAlloyMethodType {
                 mw.visitMethodInsn(INVOKEVIRTUAL, TYPE_CALLBACK_RETURNABLE.getInternalName(), "setReturnValue",
                         "(Ljava/lang/Object;)V", false);
             }
-
-            mw.visitInsn(RETURN);
         }
 
         @Override
