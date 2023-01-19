@@ -6,7 +6,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import sh.emberj.annotate.alloy.AlloyHead.AlloyHeadHandler;
-import sh.emberj.annotate.alloy.types.AlloyInjectMethodType;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.AnnotateLoadStage;
 import sh.emberj.annotate.core.AnnotatedMethod;
@@ -26,11 +25,11 @@ public @interface AlloyHead {
     public String name() default "";
 
     public static class AlloyHeadHandler implements IMethodAnnotationHandler {
-        public static final AlloyInjectMethodType METHOD_TYPE = new AlloyInjectMethodType("HEAD");
+        public static final AlloyInjectionType METHOD_TYPE = new AlloyInjectionType("HEAD");
         @Override
         public void handleMethodAnnotation(AnnotatedMethod method, AnnotationMetadata annotation)
                 throws AnnotateException {
-            IAlloyMethodType.addMethod(METHOD_TYPE, annotation, method,
+            IAlloyInjectionType.createFromMethod(METHOD_TYPE, annotation, method,
                     ClassMetadataFactory.create(annotation.getClassParam("value")), annotation.getStringParam("name"));
         }
     }

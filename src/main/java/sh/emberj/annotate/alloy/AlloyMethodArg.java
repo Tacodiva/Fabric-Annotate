@@ -4,6 +4,6 @@ import org.objectweb.asm.Type;
 
 import sh.emberj.annotate.core.asm.AnnotationMetadata;
 
-public record AlloyArgument(AlloyArgumentType alloyType, AnnotationMetadata annotation, Type type) {
+public record AlloyMethodArg(AlloyMethodArgType alloyType, AnnotationMetadata annotation, Type type) {
     
 }

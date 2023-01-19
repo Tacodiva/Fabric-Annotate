@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.code.Injector;
 import org.spongepowered.asm.mixin.injection.struct.InjectionInfo;
 import org.spongepowered.asm.mixin.injection.struct.InjectionInfo.HandlerPrefix;
 import org.spongepowered.asm.mixin.transformer.MixinTargetContext;
+import org.spongepowered.asm.util.Annotations;
 
 import sh.emberj.annotate.mixin.MixinExtInjectionInfo;
 
@@ -20,7 +21,7 @@ public class AlloyInjectInfo extends InjectionInfo {
 
     @Override
     public Injector parseInjector(AnnotationNode arg0) {
-        return new AlloyInjector(this);
+        return new AlloyInjector(this, Annotations.<Integer>getValue(annotation, "annotateID"));
     }
 
 }

@@ -2,6 +2,7 @@ package sh.emberj.annotate.core.asm;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.objectweb.asm.Type;
 
@@ -75,5 +76,9 @@ public class AnnotationArrayMetadata {
 
     public AnnotationMetadata getAnnotation(int name) {
         return (AnnotationMetadata) _CONTENTS.get(name);
+    }
+
+    public Stream<Object> stream() {
+        return _CONTENTS.stream();
     }
 }

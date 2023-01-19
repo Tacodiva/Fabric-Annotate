@@ -82,6 +82,13 @@ public class AnnotationMetadata {
         return (AnnotationArrayMetadata) _PARAMETERS.get(name);
     }
 
+    public AnnotationArrayMetadata getArrayParamOrEmpty(String name) {
+        AnnotationArrayMetadata arr = (AnnotationArrayMetadata) _PARAMETERS.get(name);
+        if (arr == null)
+            return new AnnotationArrayMetadata();
+        return arr;
+    }
+
     public AnnotationMetadata getAnnotationParam(String name) {
         return (AnnotationMetadata) _PARAMETERS.get(name);
     }

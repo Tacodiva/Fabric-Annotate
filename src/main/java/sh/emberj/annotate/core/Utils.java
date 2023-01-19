@@ -1,6 +1,8 @@
 package sh.emberj.annotate.core;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -11,6 +13,10 @@ import java.util.Map;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.util.Printer;
+import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceMethodVisitor;
 import org.spongepowered.asm.service.MixinService;
 
 import net.fabricmc.loader.impl.launch.FabricLauncherBase;
@@ -20,30 +26,32 @@ public class Utils implements Opcodes {
     private Utils() {
     }
 
-    private static record PrimitiveTypeInfo(Type type, Class<?> clazz, Type objectType, String valueMethod,
-            int lvOpcode, int variableSize) {
+    public static record PrimitiveTypeInfo(Type type, Class<?> clazz, Type objectType, String valueMethod,
+            int variableSize) {
     }
 
     private static final Map<String, PrimitiveTypeInfo> _PRIMITIVE_INFO = new HashMap<>() {
-        private void addPrimitive(Type type, Class<?> clazz, Type objectType, String valueMethod, int lvOpcode,
-                int variableSize) {
+        private void addPrimitive(Type type, Class<?> clazz, Type objectType, String valueMethod, int variableSize) {
             put(type.getClassName(),
-                    new PrimitiveTypeInfo(type, clazz, objectType, valueMethod, lvOpcode, variableSize));
+                    new PrimitiveTypeInfo(type, clazz, objectType, valueMethod, variableSize));
         }
 
         {
-            addPrimitive(Type.BYTE_TYPE, byte.class, Type.getType(Byte.class), "byteValue", ILOAD, 1);
-            addPrimitive(Type.BOOLEAN_TYPE, boolean.class, Type.getType(Boolean.class), "booleanValue", ILOAD, 1);
-            addPrimitive(Type.CHAR_TYPE, char.class, Type.getType(Character.class), "charValue", ILOAD, 1);
-            addPrimitive(Type.SHORT_TYPE, short.class, Type.getType(Short.class), "shortValue", ILOAD, 1);
-            addPrimitive(Type.INT_TYPE, int.class, Type.getType(Integer.class), "intValue", ILOAD, 1);
-            addPrimitive(Type.FLOAT_TYPE, float.class, Type.getType(Float.class), "floatValue", FLOAD, 1);
-            addPrimitive(Type.LONG_TYPE, long.class, Type.getType(Long.class), "longValue", LLOAD, 2);
-            addPrimitive(Type.DOUBLE_TYPE, double.class, Type.getType(Double.class), "doubleValue", DLOAD, 2);
+            addPrimitive(Type.BYTE_TYPE, byte.class, Type.getType(Byte.class), "byteValue", 1);
+            addPrimitive(Type.BOOLEAN_TYPE, boolean.class, Type.getType(Boolean.class), "booleanValue", 1);
+            addPrimitive(Type.CHAR_TYPE, char.class, Type.getType(Character.class), "charValue",
+                    1);
+            addPrimitive(Type.SHORT_TYPE, short.class, Type.getType(Short.class), "shortValue",
+                    1);
+            addPrimitive(Type.INT_TYPE, int.class, Type.getType(Integer.class), "intValue", 1);
+            addPrimitive(Type.FLOAT_TYPE, float.class, Type.getType(Float.class), "floatValue",
+                    1);
+            addPrimitive(Type.LONG_TYPE, long.class, Type.getType(Long.class), "longValue", 2);
+            addPrimitive(Type.DOUBLE_TYPE, double.class, Type.getType(Double.class), "doubleValue", 2);
         }
     };
 
-    private static PrimitiveTypeInfo getPrimitiveInfo(Type type) {
+    public static PrimitiveTypeInfo getPrimitiveInfo(Type type) {
         return _PRIMITIVE_INFO.get(type.getClassName());
     }
 
@@ -79,11 +87,18 @@ public class Utils implements Opcodes {
         return info.variableSize;
     }
 
-    public static int getVariableLoadOpcode(Type type) {
+    public static int getDUPOpcode(Type type) {
         PrimitiveTypeInfo info = getPrimitiveInfo(type);
-        if (info == null)
-            return ALOAD;
-        return info.lvOpcode;
+        if (info == null || info.variableSize == 1)
+            return DUP;
+        return DUP2;
+    }
+
+    public static int getPOPOpcode(Type type) {
+        PrimitiveTypeInfo info = getPrimitiveInfo(type);
+        if (info == null || info.variableSize == 1)
+            return POP;
+        return POP2;
     }
 
     public static boolean isClassLoaded(String className) {
@@ -154,4 +169,16 @@ public class Utils implements Opcodes {
     public static String descriptorFromClassName(String className) {
         return "L" + className.replace('.', '/') + ";";
     }
+
+    private static Printer printer = new Textifier();
+    private static TraceMethodVisitor mp = new TraceMethodVisitor(printer);
+
+    public static String insnToString(AbstractInsnNode insn) {
+        insn.accept(mp);
+        StringWriter sw = new StringWriter();
+        printer.print(new PrintWriter(sw));
+        printer.getText().clear();
+        return sw.toString().trim();
+    }
+
 }

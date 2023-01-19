@@ -13,6 +13,6 @@ public @interface AlloyInject {
     public String[] method();
 
     public At[] at();
-
-    public int require() default -1;
+    
+    public int annotateID();
 }
