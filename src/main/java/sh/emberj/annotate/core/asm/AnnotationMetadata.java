@@ -1,8 +1,11 @@
 package sh.emberj.annotate.core.asm;
 
+import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Type;
 
 import sh.emberj.annotate.core.AnnotateException;
@@ -10,7 +13,11 @@ import sh.emberj.annotate.core.AnnotateException;
 public class AnnotationMetadata {
 
     private Type _TYPE;
-    private Map<String, Object> _PARAMETERS;
+    protected Map<String, Object> _PARAMETERS;
+
+    public AnnotationMetadata(Class<? extends Annotation> type) {
+        this(Type.getType(type));
+    }
 
     public AnnotationMetadata(Type type) {
         _TYPE = type;
@@ -85,8 +92,29 @@ public class AnnotationMetadata {
 
     public boolean getBooleanParam(String name, boolean defaultValue) {
         Boolean value = getBooleanParam(name);
-        if (value == null) return defaultValue;
+        if (value == null)
+            return defaultValue;
         return value;
     }
 
+    public void write(AnnotationVisitor aw) {
+        for (Entry<String, Object> param : _PARAMETERS.entrySet())
+            write(param.getKey(), param.getValue(), aw);
+        aw.visitEnd();
+    }
+
+    static void write(String key, Object value, AnnotationVisitor aw) {
+        if (value instanceof AnnotationMetadata annotation)
+            annotation.write(aw.visitAnnotation(key, annotation.getType().getDescriptor()));
+        else if (value instanceof AnnotationEnumMetadata enum_)
+            aw.visitEnum(key, enum_.getDescriptor(), enum_.getValue());
+        else if (value instanceof AnnotationArrayMetadata array) {
+            AnnotationVisitor arrayVisitor = aw.visitArray(key);
+            for (int i = 0; i < array.size(); i++)
+                write(null, array.get(i), arrayVisitor);
+            arrayVisitor.visitEnd();
+        } else {
+            aw.visit(key, value);
+        }
+    }
 }

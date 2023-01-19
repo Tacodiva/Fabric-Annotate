@@ -10,6 +10,7 @@ import java.util.Set;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -25,20 +26,29 @@ import sh.emberj.annotate.core.Utils;
 public class ClassMetadataFactory {
 
     private static Map<String, ClassMetadata> _CAHCE = new HashMap<>();
-    private static final ImmutableSet<ClassInfo> _ALL_CLASSES;
+    private static ImmutableSet<ClassInfo> _allClasses;
 
     static {
-        try {
-            _ALL_CLASSES = ClassPath.from(ClassMetadataFactory.class.getClassLoader()).getAllClasses();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
-    private static ImmutableSet<ClassInfo> getAllClassesRecursive(String packageName) {
+    private static ImmutableSet<ClassInfo> getAllClasses() throws AnnotateException {
+        if (_allClasses != null)
+            return _allClasses;
+        long start = System.currentTimeMillis();
+        try {
+            _allClasses = ClassPath.from(ClassMetadataFactory.class.getClassLoader()).getAllClasses();
+        } catch (IOException e) {
+            throw new AnnotateException("Error while enumerating classpath.", e);
+        }
+        Annotate.LOG
+                .info("Found " + _allClasses.size() + " classes in " + (System.currentTimeMillis() - start) + "ms");
+        return _allClasses;
+    }
+
+    private static ImmutableSet<ClassInfo> getAllClassesRecursive(String packageName) throws AnnotateException {
         String packagePrefix = packageName + '.';
         ImmutableSet.Builder<ClassInfo> builder = ImmutableSet.builder();
-        for (ClassInfo classInfo : _ALL_CLASSES) {
+        for (ClassInfo classInfo : getAllClasses()) {
             if (classInfo.getName().startsWith(packagePrefix)) {
                 builder.add(classInfo);
             }
@@ -150,6 +160,12 @@ public class ClassMetadataFactory {
                 AnnotationMetadata annotation = new AnnotationMetadata(Type.getType(descriptor));
                 _TARGET.addArgumentAnnotation(parameter, annotation);
                 return new AnnotationMetadataVisitor(annotation);
+            }
+
+            @Override
+            public void visitLocalVariable(String name, String descriptor,
+                    String signature, Label start, Label end, int index) {
+                System.out.println("LOCAL " + index + " -> " + name + " " + descriptor + " RANGE " + start + " - " + end);
             }
         }
 

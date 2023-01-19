@@ -14,6 +14,7 @@ import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.MethodDef;
 import sh.emberj.annotate.core.AnnotateException;
 import sh.emberj.annotate.core.asm.ClassMetadata;
+import sh.emberj.annotate.core.asm.MethodMetadata;
 
 public class TinyMappedClass {
     private final ClassDef _CLASS_DEF;
@@ -25,7 +26,8 @@ public class TinyMappedClass {
     private final TinyMapper _MAPPER;
     private final ClassMetadata _TYPE_META;
 
-    TinyMappedClass(TinyMapper mapper, ClassMetadata meta, ClassDef classDef, TinyNamespace namespace) throws AnnotateException {
+    TinyMappedClass(TinyMapper mapper, ClassMetadata meta, ClassDef classDef, TinyNamespace namespace)
+            throws AnnotateException {
         _CLASS_DEF = classDef;
         _NAMESPACE = namespace;
         _MAPPER = mapper;
@@ -53,8 +55,11 @@ public class TinyMappedClass {
     private void addInheritedProperties(Type type) {
         TinyMappedClass typeClass = _MAPPER.getClasspathNamespace().getClass(type);
         if (typeClass != null) {
-            for (TinyMappedMethod method : typeClass.getMethods())
-                addMethod(method.mapTo(_NAMESPACE));
+            for (TinyMappedMethod method : typeClass.getMethods()) {
+                MethodMetadata ourMethod = _TYPE_META.getMethod(method.getName(), method.getDescriptor());
+                if (ourMethod != null)
+                    addMethod(new TinyMappedMethod(_MAPPER, method.getMethodDef(), this));
+            }
             for (TinyMappedField field : typeClass.getFields())
                 addField(field.mapTo(_NAMESPACE));
         }

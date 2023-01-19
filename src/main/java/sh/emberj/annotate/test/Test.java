@@ -1,7 +1,5 @@
 package sh.emberj.annotate.test;
 
-import java.util.function.BooleanSupplier;
-
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import io.netty.buffer.Unpooled;
@@ -10,8 +8,6 @@ import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.network.NetworkSide;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
 import sh.emberj.annotate.alloy.AlloyHead;
 import sh.emberj.annotate.alloy.AlloyTail;
@@ -64,27 +60,27 @@ public class Test {
 
     public static boolean done = false;
 
-    @AlloyHead(MinecraftServer.class)
-    public static void tick(@AlloyThis MinecraftServer _this, BooleanSupplier shouldKeepTicking) {
+    // @AlloyHead(MinecraftServer.class)
+    // public static void tick(@AlloyThis MinecraftServer _this, BooleanSupplier shouldKeepTicking) {
         
-        if (_this.getPlayerManager().getPlayerList().size() != 0) {
-            done = true;
-            ServerPlayerEntity spe = _this.getPlayerManager().getPlayerList().get(0);
-            NetworkCallbacks.execute(spe, Test::clientCallback, "Hello, world!");
-        }
-    }
+    //     if (_this.getPlayerManager().getPlayerList().size() != 0) {
+    //         done = true;
+    //         ServerPlayerEntity spe = _this.getPlayerManager().getPlayerList().get(0);
+    //         NetworkCallbacks.execute(spe, Test::clientCallback, "Hello, world!");
+    //     }
+    // }
 
     // @Translation(key = "singleplayer", value = "Yay!", type = "menu.", namespace = Translation.NO_NAMESPACE)
-    @Entrypoint(stage = AnnotateLoadStage.PRELAUNCH)
-    @Environment(EnvType.SERVER)
-    public static void onInit0() {
-        Annotate.LOG.info("On init 0!");
-    }
+    // @Entrypoint(stage = AnnotateLoadStage.PRELAUNCH)
+    // @Environment(EnvType.SERVER)
+    // public static void onInit0() {
+    //     Annotate.LOG.info("On init 0!");
+    // }
 
-    @Entrypoint(stage = AnnotateLoadStage.PREINIT, priority = 1)
-    public static void onInit1() {
-        Annotate.LOG.info("On init 1!");
-    }
+    // @Entrypoint(stage = AnnotateLoadStage.PREINIT, priority = 1)
+    // public static void onInit1() {
+    //     Annotate.LOG.info("On init 1!");
+    // }
 
     @Entrypoint
     public static void onInit2() {
@@ -96,28 +92,28 @@ public class Test {
         Annotate.LOG.info("On init 3!");
     }
 
-    @AlloyHead(MixinTarget.class)
+    @AlloyTail(MixinTarget.class)
     public static void staticOne() {
         Annotate.LOG.info("Static One Mixin!");
     }
 
-    @AlloyHead(MixinTarget.class)
-    public static String staticTwo(String idk, int fbfb) {
-        Annotate.LOG.info("Static Two Mixin! Got idk = " + idk + " and fbfb = " + fbfb);
-        return "cancelled!";
-    }
+    // @AlloyHead(value = MixinTarget.class, cancellable = true)
+    // public static String staticTwo(String idk, int fbfb) {
+    //     Annotate.LOG.info("Static Two Mixin! Got idk = " + idk + " and fbfb = " + fbfb);
+    //     return "cancelled!";
+    // }
 
-    @AlloyTail(MixinTarget.class)
-    public static double memberOne(@AlloyThis MixinTarget _this, double abcde, @AlloyInfo CallbackInfoReturnable<Double> info, @AlloyReturned double oldReturn) { //CallbackInfo cbi, double returnVal
-        Annotate.LOG.info("Member One Mixin! " + abcde);
-        Annotate.LOG.info("State = " + _this.state);
-        Annotate.LOG.info("Old Return = " + oldReturn);   
-        return 1111;
-    }
+    // @AlloyTail(MixinTarget.class)
+    // public static double memberOne(@AlloyThis MixinTarget _this, double abcde, @AlloyInfo CallbackInfoReturnable<Double> info, @AlloyReturned double oldReturn) { //CallbackInfo cbi, double returnVal
+    //     Annotate.LOG.info("Member One Mixin! " + abcde);
+    //     Annotate.LOG.info("State = " + _this.state);
+    //     Annotate.LOG.info("Old Return = " + oldReturn);   
+    //     return 1111;
+    // }
 
-    @AlloyHead(TitleScreen.class)
-    public static void init() {
-        System.out.println("==== TITLE SCREEN MIXIN ====");
-        // System.exit(0);
-    }
+    // @AlloyHead(TitleScreen.class)
+    // public static void init() {
+    //     System.out.println("==== TITLE SCREEN MIXIN ====");
+    //     // System.exit(0);
+    // }
 }

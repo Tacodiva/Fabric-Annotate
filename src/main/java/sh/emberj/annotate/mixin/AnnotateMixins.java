@@ -29,7 +29,7 @@ import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.entrypoint.Entrypoint;
 
 public class AnnotateMixins {
-    public static final Logger LOG = LoggerFactory.getLogger(AnnotateMixins.class);
+    public static final Logger LOG = LoggerFactory.getLogger("Annotate/Mixin");
 
     private AnnotateMixins() {
     }

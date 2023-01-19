@@ -18,6 +18,10 @@ public class TinyMappedMethod {
         _MAPPER = mapper;
     }
 
+    public MethodDef getMethodDef() {
+        return _METHOD_DEF;
+    }
+
     public TinyMappedMethod mapTo(TinyNamespace namespace) {
         if (getNamespace() == namespace)
             return this;

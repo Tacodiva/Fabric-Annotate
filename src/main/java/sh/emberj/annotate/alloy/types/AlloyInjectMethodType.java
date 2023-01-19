@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import sh.emberj.annotate.alloy.AlloyArgument;
 import sh.emberj.annotate.alloy.IAlloyMethod;
@@ -17,7 +18,8 @@ import sh.emberj.annotate.core.AnnotatedMethod;
 import sh.emberj.annotate.core.Utils;
 import sh.emberj.annotate.core.asm.AnnotationMetadata;
 import sh.emberj.annotate.core.asm.MethodMetadata;
-import sh.emberj.annotate.mixin.DynamicMixinAnnotation;
+import sh.emberj.annotate.core.asm.MutableAnnotationArrayMetadata;
+import sh.emberj.annotate.core.asm.MutableAnnotationMetadata;
 import sh.emberj.annotate.mixin.IDynamicMixinMethodGenerator;
 
 public class AlloyInjectMethodType implements IAlloyMethodType {
@@ -30,16 +32,20 @@ public class AlloyInjectMethodType implements IAlloyMethodType {
 
     @Override
     public IDynamicMixinMethodGenerator createDynamicMixin(AnnotationMetadata alloyAnnotation, AnnotatedMethod alloy,
-            AlloyArgument[] alloyArgs, MethodMetadata target) {
+            AlloyArgument[] alloyArgs, MethodMetadata target) throws AnnotateException {
         return new AlloyInjectMethod(alloyAnnotation, alloy, alloyArgs, target);
     }
 
-    protected DynamicMixinAnnotation generateAnnotation(AlloyInjectMethod method) {
-        DynamicMixinAnnotation inject = new DynamicMixinAnnotation(Inject.class, true);
-        DynamicMixinAnnotation at = new DynamicMixinAnnotation(At.class, true);
-        at.setParam("value", POSITION);
-        inject.setAnnotationArrayParam("at", at);
-        inject.setArrayParam("method", method.TARGET.getName() + method.TARGET.getDescriptor());
+    protected AnnotationMetadata generateAnnotation(AlloyInjectMethod method) {
+        MutableAnnotationMetadata inject = new MutableAnnotationMetadata(Inject.class);
+        MutableAnnotationArrayMetadata atArr = new MutableAnnotationArrayMetadata();
+        MutableAnnotationMetadata at = new MutableAnnotationMetadata(At.class);
+        at.setStringParam("value", POSITION);
+        atArr.addAnnotation(at);
+        inject.setArrayParam("at", atArr);
+        MutableAnnotationArrayMetadata methodArr = new MutableAnnotationArrayMetadata();
+        methodArr.addString(method.TARGET.getName() + method.TARGET.getDescriptor());
+        inject.setArrayParam("method", methodArr);
         Boolean cancellable = method.ALLOY_ANNOTATION.getBooleanParam("cancellable");
         if (cancellable == null) {
             if (method.HAS_RETURN) {
@@ -58,7 +64,8 @@ public class AlloyInjectMethodType implements IAlloyMethodType {
                     cancellable = false;
             }
         }
-        inject.setParam("cancellable", cancellable);
+        inject.setBooleanParam("cancellable", cancellable);
+        inject.setEnumParam("locals", LocalCapture.PRINT);
         return inject;
     }
 
@@ -76,7 +83,7 @@ public class AlloyInjectMethodType implements IAlloyMethodType {
         private final int _CALLBACK_PARAM_INDEX;
 
         public AlloyInjectMethod(AnnotationMetadata alloyAnnotation, AnnotatedMethod method, AlloyArgument[] methodArgs,
-                MethodMetadata target) {
+                MethodMetadata target) throws AnnotateException {
             ANNOTATED_METHOD = method;
             METHOD = method.getMetadata();
             METHOD_ARGS = methodArgs;
@@ -93,10 +100,15 @@ public class AlloyInjectMethodType implements IAlloyMethodType {
                 }
             }
             _CALLBACK_PARAM_INDEX = targetArgsTotalSize;
+
+            if (!METHOD.hasModifier(Modifier.PUBLIC))
+                throw new AnnotateException("Alloy methods must be public.", method);
+            if (!METHOD.hasModifier(Modifier.STATIC))
+                throw new AnnotateException("Alloy methods must be static.", method);
         }
 
         @Override
-        public DynamicMixinAnnotation generateAnnotation() {
+        public AnnotationMetadata generateAnnotation() {
             return AlloyInjectMethodType.this.generateAnnotation(this);
         }
 

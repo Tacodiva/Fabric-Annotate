@@ -7,13 +7,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import sh.emberj.annotate.core.AnnotateException;
+import sh.emberj.annotate.core.asm.AnnotationMetadata;
 
 public interface IDynamicMixinMethodGenerator extends Opcodes {
 
     public static final Type TYPE_CALLBACK_INFO = Type.getType(CallbackInfo.class);
     public static final Type TYPE_CALLBACK_RETURNABLE = Type.getType(CallbackInfoReturnable.class);
 
-    public DynamicMixinAnnotation generateAnnotation() throws AnnotateException;
+    public AnnotationMetadata generateAnnotation() throws AnnotateException;
 
     public String generateDescriptor() throws AnnotateException;
 

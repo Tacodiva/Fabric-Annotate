@@ -10,6 +10,9 @@ import org.objectweb.asm.Type;
 import org.spongepowered.asm.mixin.Mixin;
 
 import sh.emberj.annotate.core.AnnotateException;
+import sh.emberj.annotate.core.asm.AnnotationMetadata;
+import sh.emberj.annotate.core.asm.MutableAnnotationArrayMetadata;
+import sh.emberj.annotate.core.asm.MutableAnnotationMetadata;
 
 public class DynamicMixinClass implements Opcodes {
 
@@ -42,11 +45,11 @@ public class DynamicMixinClass implements Opcodes {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
         {
-            DynamicMixinAnnotation mixinAnnotation = new DynamicMixinAnnotation(Mixin.class, false);
-            mixinAnnotation.setArrayParam("value", _TARGET);
-            mixinAnnotation
-                    .writeParams(cw.visitAnnotation(mixinAnnotation.getDescriptor(), mixinAnnotation.isVisible()))
-                    .visitEnd();
+            MutableAnnotationMetadata mixinAnnotation = new MutableAnnotationMetadata(Mixin.class);
+            MutableAnnotationArrayMetadata value = new MutableAnnotationArrayMetadata();
+            value.addClass(_TARGET);
+            mixinAnnotation.setArrayParam("value", value);
+            mixinAnnotation.write(cw.visitAnnotation(mixinAnnotation.getType().getDescriptor(), false));
         }
 
         cw.visit(V1_1, ACC_PUBLIC | ACC_SUPER, _CLASS_NAME, null, "java/lang/Object", null);
@@ -69,10 +72,8 @@ public class DynamicMixinClass implements Opcodes {
             MethodVisitor mw = cw.visitMethod(method.generateMethodFlags(), method.getNamePrefix() + i,
                     method.generateDescriptor(), null,
                     null);
-            DynamicMixinAnnotation methodAnnotation = method.generateAnnotation();
-            methodAnnotation
-                    .writeParams(mw.visitAnnotation(methodAnnotation.getDescriptor(), methodAnnotation.isVisible()))
-                    .visitEnd();
+            AnnotationMetadata methodAnnotation = method.generateAnnotation();
+            methodAnnotation.write(mw.visitAnnotation(methodAnnotation.getType().getDescriptor(), true));
             method.generateMethod(mw);
             mw.visitEnd();
         }

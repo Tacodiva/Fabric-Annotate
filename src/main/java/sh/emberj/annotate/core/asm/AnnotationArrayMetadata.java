@@ -9,7 +9,7 @@ import sh.emberj.annotate.core.AnnotateException;
 
 public class AnnotationArrayMetadata {
 
-    private final List<Object> _CONTENTS;
+    protected final List<Object> _CONTENTS;
 
     public AnnotationArrayMetadata() {
         _CONTENTS = new ArrayList<>();

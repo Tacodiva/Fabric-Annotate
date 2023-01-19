@@ -7,7 +7,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 
 import sh.emberj.annotate.core.AnnotateException;
+import sh.emberj.annotate.core.asm.AnnotationMetadata;
 import sh.emberj.annotate.core.asm.MethodMetadata;
+import sh.emberj.annotate.core.asm.MutableAnnotationArrayMetadata;
+import sh.emberj.annotate.core.asm.MutableAnnotationMetadata;
 
 public class MethodProber {
     private MethodProber() {
@@ -66,14 +69,17 @@ public class MethodProber {
         }
 
         @Override
-        public DynamicMixinAnnotation generateAnnotation() {
-            DynamicMixinAnnotation inject = new DynamicMixinAnnotation(Inject.class, true);
-
-            DynamicMixinAnnotation at = new DynamicMixinAnnotation(At.class, true);
-            at.setParam("value", "HEAD");
-            inject.setAnnotationArrayParam("at", at);
-            inject.setArrayParam("method", _TARGET.getName() + _TARGET.getDescriptor());
-            inject.setParam("cancellable", true);
+        public AnnotationMetadata generateAnnotation() {
+            MutableAnnotationMetadata inject = new MutableAnnotationMetadata(Inject.class);
+            MutableAnnotationArrayMetadata atArr = new MutableAnnotationArrayMetadata();
+            MutableAnnotationMetadata at = new MutableAnnotationMetadata(At.class);
+            at.setStringParam("value", "HEAD");
+            atArr.addAnnotation(at);
+            inject.setArrayParam("at", atArr);
+            MutableAnnotationArrayMetadata methodArr = new MutableAnnotationArrayMetadata();
+            methodArr.addString(_TARGET.getName() + _TARGET.getDescriptor());
+            inject.setArrayParam("method", methodArr);
+            inject.setBooleanParam("cancellable", true);
             return inject;
         }
 
@@ -120,6 +126,6 @@ public class MethodProber {
         public Type getTargetType() {
             return _TARGET.getDeclaringClass().getType();
         }
-    
+
     }
 }

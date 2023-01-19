@@ -189,8 +189,8 @@ public class Annotate {
             if (e instanceof AnnotateException ae)
                 ae.showGUI();
             else
-            throw new RuntimeException(e);
-            //     new AnnotateException("Unknown error while loading Annotate.", e).showGUI();
+                throw new RuntimeException(e);
+            // new AnnotateException("Unknown error while loading Annotate.", e).showGUI();
         }
     }
 
